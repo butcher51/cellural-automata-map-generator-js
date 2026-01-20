@@ -1,5 +1,5 @@
 import { BOX_SIZE, MAP_SIZE, ITERATIONS } from './constants.js';
-import { generateOrganicMap, getCellColor } from './map-utils.js';
+import { generateMap, getCellColor, getCellColorWithDrawingState, getCellsInBrushArea, deepCopyMap, applyOrganicIterations, pixelToGridCoordinate, toggleCellValue, setCellValue } from './map-utils.js';
 
 const canvas = document.getElementById('canvas');
 const ctx = canvas.getContext('2d');
@@ -12,8 +12,13 @@ canvas.height = window.innerHeight;
 ctx.fillStyle = '#2a2a2a';
 ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-// Initialize the map with organic generation
-const map = generateOrganicMap(MAP_SIZE, ITERATIONS);
+// Initialize the map with organic cave patterns
+let map = applyOrganicIterations(generateMap(MAP_SIZE), ITERATIONS);
+
+// State for drag-to-paint interaction
+let isDrawing = false;
+let paintedCellsInStroke = new Set();
+let paintTargetValue = null; // null when not painting, 0 or 1 during stroke
 
 // Load number sprite sheet (100x10 PNG: nine 10x10 digits 0-8)
 const numberSprite = new Image();
@@ -34,6 +39,89 @@ window.addEventListener('resize', () => {
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 });
 
+// Helper function to paint cells during drag with 2x2 brush
+function paintCellAtPosition(event) {
+    // Safety: ensure we have a target value
+    if (paintTargetValue === null) return;
+
+    // Get click coordinates relative to canvas
+    const rect = canvas.getBoundingClientRect();
+    const pixelX = event.clientX - rect.left;
+    const pixelY = event.clientY - rect.top;
+
+    // Convert to grid coordinates (center of brush)
+    const { x, y } = pixelToGridCoordinate(pixelX, pixelY, BOX_SIZE);
+
+    // Validate center cell bounds
+    if (x < 0 || x >= MAP_SIZE || y < 0 || y >= MAP_SIZE) {
+        return;
+    }
+
+    // Get all cells in 2x2 brush area
+    const brushSize = 2;
+    const cellsToPaint = getCellsInBrushArea(x, y, brushSize, MAP_SIZE);
+
+    // Paint each cell (avoid redundant sets within a single stroke)
+    for (const cell of cellsToPaint) {
+        const cellKey = `${cell.x},${cell.y}`;
+        if (!paintedCellsInStroke.has(cellKey)) {
+            map = setCellValue(map, cell.x, cell.y, paintTargetValue);
+            paintedCellsInStroke.add(cellKey);
+        }
+    }
+}
+
+// Handle mouse down to start painting
+function handleMouseDown(event) {
+    isDrawing = true;
+    paintedCellsInStroke = new Set();
+
+    // Determine target value from first clicked cell
+    const rect = canvas.getBoundingClientRect();
+    const pixelX = event.clientX - rect.left;
+    const pixelY = event.clientY - rect.top;
+    const { x, y } = pixelToGridCoordinate(pixelX, pixelY, BOX_SIZE);
+
+    // Validate bounds and set target value
+    if (x >= 0 && x < MAP_SIZE && y >= 0 && y < MAP_SIZE) {
+        const currentValue = map[y][x].value;
+        paintTargetValue = currentValue === 0 ? 0 : 1; // Invert current value
+    } else {
+        paintTargetValue = 1; // Default if clicking out of bounds
+    }
+
+    // Paint the initial cells with brush
+    paintCellAtPosition(event);
+}
+
+// Handle mouse move to continue painting
+function handleMouseMove(event) {
+    if (!isDrawing) return;
+
+    // Continue painting while dragging
+    paintCellAtPosition(event);
+}
+
+// Handle mouse up to finish painting and rerun iterations
+function handleMouseUp(event) {
+    if (!isDrawing) return;
+
+    isDrawing = false;
+    paintedCellsInStroke = new Set();
+    paintTargetValue = null; // Clear target value
+
+    // NOW rerun cellular automaton iterations (clears isBeingDrawn flags)
+    map = applyOrganicIterations(map, ITERATIONS);
+}
+
+// Attach mouse event listeners for drag-to-paint
+canvas.addEventListener('mousedown', handleMouseDown);
+canvas.addEventListener('mousemove', handleMouseMove);
+canvas.addEventListener('mouseup', handleMouseUp);
+
+// Also handle mouse leaving canvas
+canvas.addEventListener('mouseleave', handleMouseUp);
+
 // Render the map with colors based on cell objects and sprite numbers
 function renderMap(map, ctx, boxSize, sprite) {
     for (let y = 0; y < map.length; y++) {
@@ -42,8 +130,8 @@ function renderMap(map, ctx, boxSize, sprite) {
             const cellX = x * boxSize;
             const cellY = y * boxSize;
 
-            // Draw background
-            ctx.fillStyle = getCellColor(cell);
+            // Draw background (uses drawing state for temporary colors)
+            ctx.fillStyle = getCellColorWithDrawingState(cell);
             ctx.fillRect(cellX, cellY, boxSize, boxSize);
 
             // Draw friend count number from sprite sheet

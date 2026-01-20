@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { generateMap, getCellColor, countNeighborFriends, calculateAllFriendCounts, applyCaveRules, generateOrganicMap } from './map-utils.js';
+import { generateMap, getCellColor, countNeighborFriends, calculateAllFriendCounts, applyCaveRules, generateOrganicMap, deepCopyMap, pixelToGridCoordinate, toggleCellValue, setCellValue, applyOrganicIterations, getCellsInBrushArea, getCellColorWithDrawingState } from './map-utils.js';
 
 describe('generateMap', () => {
     it('should return a 2D array', () => {
@@ -76,6 +76,17 @@ describe('generateMap', () => {
 
         // Verify that cell objects are independent
         expect(map[0][0]).not.toBe(map[0][1]);
+    });
+
+    it('should initialize all cells with isBeingDrawn property set to false', () => {
+        const map = generateMap(5);
+
+        map.forEach(row => {
+            row.forEach(cell => {
+                expect(cell).toHaveProperty('isBeingDrawn');
+                expect(cell.isBeingDrawn).toBe(false);
+            });
+        });
     });
 });
 
@@ -497,5 +508,782 @@ describe('generateOrganicMap', () => {
         expect(map[0][0]).toHaveProperty('value');
         expect(map[0][0]).toHaveProperty('friendCount');
         expect(map[0][0].friendCount).toBe(0); // No neighbors
+    });
+});
+
+describe('deepCopyMap', () => {
+    it('should create an independent copy of the map', () => {
+        const original = [
+            [{ value: 1, friendCount: 3 }, { value: 0, friendCount: 2 }],
+            [{ value: 0, friendCount: 1 }, { value: 1, friendCount: 4 }]
+        ];
+        const copy = deepCopyMap(original);
+
+        // Modify the copy
+        copy[0][0].value = 999;
+        copy[0][0].friendCount = 888;
+
+        // Original should remain unchanged
+        expect(original[0][0].value).toBe(1);
+        expect(original[0][0].friendCount).toBe(3);
+    });
+
+    it('should preserve all cell properties', () => {
+        const original = [
+            [{ value: 1, friendCount: 5 }],
+            [{ value: 0, friendCount: 2 }]
+        ];
+        const copy = deepCopyMap(original);
+
+        expect(copy[0][0].value).toBe(1);
+        expect(copy[0][0].friendCount).toBe(5);
+        expect(copy[1][0].value).toBe(0);
+        expect(copy[1][0].friendCount).toBe(2);
+    });
+
+    it('should handle empty map', () => {
+        const original = [];
+        const copy = deepCopyMap(original);
+
+        expect(copy).toEqual([]);
+        expect(copy).not.toBe(original); // Different reference
+    });
+
+    it('should create independent row arrays', () => {
+        const original = [
+            [{ value: 1, friendCount: 0 }],
+            [{ value: 0, friendCount: 1 }]
+        ];
+        const copy = deepCopyMap(original);
+
+        // Modify a row in the copy
+        copy[0] = [{ value: 999, friendCount: 999 }];
+
+        // Original row should remain unchanged
+        expect(original[0][0].value).toBe(1);
+        expect(original[0][0].friendCount).toBe(0);
+    });
+
+    it('should handle single cell map', () => {
+        const original = [[{ value: 1, friendCount: 0 }]];
+        const copy = deepCopyMap(original);
+
+        copy[0][0].value = 0;
+
+        expect(original[0][0].value).toBe(1);
+    });
+
+    it('should handle large maps', () => {
+        const original = generateMap(10);
+        calculateAllFriendCounts(original);
+        const copy = deepCopyMap(original);
+
+        // Modify every cell in the copy
+        copy.forEach(row => {
+            row.forEach(cell => {
+                cell.value = 999;
+            });
+        });
+
+        // Original should remain unchanged
+        const hasNonModified = original.flat().some(cell => cell.value !== 999);
+        expect(hasNonModified).toBe(true);
+    });
+
+    it('should create new cell objects, not references', () => {
+        const original = [[{ value: 1, friendCount: 2 }]];
+        const copy = deepCopyMap(original);
+
+        expect(copy[0][0]).not.toBe(original[0][0]); // Different object reference
+        expect(copy[0][0]).toEqual(original[0][0]); // But same values
+    });
+});
+
+describe('pixelToGridCoordinate', () => {
+    it('should convert top-left corner (0,0) correctly', () => {
+        const result = pixelToGridCoordinate(0, 0, 10);
+        expect(result).toEqual({ x: 0, y: 0 });
+    });
+
+    it('should convert pixel coordinates to grid coordinates with box size 10', () => {
+        const result = pixelToGridCoordinate(25, 35, 10);
+        expect(result).toEqual({ x: 2, y: 3 });
+    });
+
+    it('should handle coordinates at exact box boundaries', () => {
+        const boxSize = 10;
+        expect(pixelToGridCoordinate(10, 10, boxSize)).toEqual({ x: 1, y: 1 });
+        expect(pixelToGridCoordinate(20, 20, boxSize)).toEqual({ x: 2, y: 2 });
+        expect(pixelToGridCoordinate(50, 50, boxSize)).toEqual({ x: 5, y: 5 });
+    });
+
+    it('should floor coordinates within the same box', () => {
+        const boxSize = 10;
+        // All pixels within box (2,3) should map to grid (2,3)
+        expect(pixelToGridCoordinate(20, 30, boxSize)).toEqual({ x: 2, y: 3 });
+        expect(pixelToGridCoordinate(21, 31, boxSize)).toEqual({ x: 2, y: 3 });
+        expect(pixelToGridCoordinate(29, 39, boxSize)).toEqual({ x: 2, y: 3 });
+    });
+
+    it('should work with different box sizes', () => {
+        expect(pixelToGridCoordinate(50, 75, 5)).toEqual({ x: 10, y: 15 });
+        expect(pixelToGridCoordinate(100, 200, 20)).toEqual({ x: 5, y: 10 });
+        expect(pixelToGridCoordinate(7, 14, 1)).toEqual({ x: 7, y: 14 });
+    });
+
+    it('should handle zero pixel coordinates', () => {
+        expect(pixelToGridCoordinate(0, 5, 10)).toEqual({ x: 0, y: 0 });
+        expect(pixelToGridCoordinate(5, 0, 10)).toEqual({ x: 0, y: 0 });
+    });
+
+    it('should handle large pixel coordinates', () => {
+        expect(pixelToGridCoordinate(999, 888, 10)).toEqual({ x: 99, y: 88 });
+    });
+
+    it('should use Math.floor behavior (always rounds down)', () => {
+        const boxSize = 10;
+        // Just before boundary
+        expect(pixelToGridCoordinate(9, 19, boxSize)).toEqual({ x: 0, y: 1 });
+        // At boundary
+        expect(pixelToGridCoordinate(10, 20, boxSize)).toEqual({ x: 1, y: 2 });
+        // Just after boundary
+        expect(pixelToGridCoordinate(11, 21, boxSize)).toEqual({ x: 1, y: 2 });
+    });
+});
+
+describe('toggleCellValue', () => {
+    it('should toggle cell value from 0 to 1', () => {
+        const original = [
+            [{ value: 0, friendCount: 2 }, { value: 1, friendCount: 3 }],
+            [{ value: 1, friendCount: 1 }, { value: 0, friendCount: 4 }]
+        ];
+        const result = toggleCellValue(original, 0, 0);
+        expect(result[0][0].value).toBe(1);
+    });
+
+    it('should toggle cell value from 1 to 0', () => {
+        const original = [
+            [{ value: 1, friendCount: 2 }, { value: 1, friendCount: 3 }],
+            [{ value: 1, friendCount: 1 }, { value: 0, friendCount: 4 }]
+        ];
+        const result = toggleCellValue(original, 0, 0);
+        expect(result[0][0].value).toBe(0);
+    });
+
+    it('should not modify the original map (immutability)', () => {
+        const original = [
+            [{ value: 0, friendCount: 2 }]
+        ];
+        const result = toggleCellValue(original, 0, 0);
+
+        expect(original[0][0].value).toBe(0); // Original unchanged
+        expect(result[0][0].value).toBe(1);   // Result changed
+    });
+
+    it('should preserve other cells unchanged', () => {
+        const original = [
+            [{ value: 0, friendCount: 2 }, { value: 1, friendCount: 3 }],
+            [{ value: 1, friendCount: 1 }, { value: 0, friendCount: 4 }]
+        ];
+        const result = toggleCellValue(original, 0, 0);
+
+        // Only (0,0) should change
+        expect(result[0][0].value).toBe(1);
+        expect(result[0][1].value).toBe(1);
+        expect(result[1][0].value).toBe(1);
+        expect(result[1][1].value).toBe(0);
+    });
+
+    it('should preserve friendCount property', () => {
+        const original = [
+            [{ value: 0, friendCount: 5 }]
+        ];
+        const result = toggleCellValue(original, 0, 0);
+
+        expect(result[0][0].friendCount).toBe(5);
+    });
+
+    it('should handle toggling corner cells', () => {
+        const original = [
+            [{ value: 0 }, { value: 1 }],
+            [{ value: 1 }, { value: 0 }]
+        ];
+
+        // Top-left
+        expect(toggleCellValue(original, 0, 0)[0][0].value).toBe(1);
+        // Top-right
+        expect(toggleCellValue(original, 1, 0)[0][1].value).toBe(0);
+        // Bottom-left
+        expect(toggleCellValue(original, 0, 1)[1][0].value).toBe(0);
+        // Bottom-right
+        expect(toggleCellValue(original, 1, 1)[1][1].value).toBe(1);
+    });
+
+    it('should handle toggling center cells', () => {
+        const original = [
+            [{ value: 0 }, { value: 0 }, { value: 0 }],
+            [{ value: 0 }, { value: 1 }, { value: 0 }],
+            [{ value: 0 }, { value: 0 }, { value: 0 }]
+        ];
+        const result = toggleCellValue(original, 1, 1);
+
+        expect(result[1][1].value).toBe(0);
+    });
+
+    it('should handle single cell map', () => {
+        const original = [[{ value: 0, friendCount: 0 }]];
+        const result = toggleCellValue(original, 0, 0);
+
+        expect(result[0][0].value).toBe(1);
+        expect(original[0][0].value).toBe(0);
+    });
+
+    it('should handle multiple toggles (toggle back)', () => {
+        const original = [[{ value: 0 }]];
+        const toggle1 = toggleCellValue(original, 0, 0);
+        const toggle2 = toggleCellValue(toggle1, 0, 0);
+
+        expect(original[0][0].value).toBe(0);
+        expect(toggle1[0][0].value).toBe(1);
+        expect(toggle2[0][0].value).toBe(0);
+    });
+
+    it('should return original map for out of bounds coordinates', () => {
+        const original = [
+            [{ value: 0 }, { value: 1 }]
+        ];
+
+        // Out of bounds should return unchanged map
+        const result1 = toggleCellValue(original, -1, 0);
+        const result2 = toggleCellValue(original, 0, -1);
+        const result3 = toggleCellValue(original, 10, 0);
+        const result4 = toggleCellValue(original, 0, 10);
+
+        expect(result1).toEqual(original);
+        expect(result2).toEqual(original);
+        expect(result3).toEqual(original);
+        expect(result4).toEqual(original);
+    });
+
+    it('should set isBeingDrawn to true when toggling a cell', () => {
+        const original = [
+            [{ value: 0, friendCount: 2, isBeingDrawn: false }]
+        ];
+        const result = toggleCellValue(original, 0, 0);
+
+        expect(result[0][0].isBeingDrawn).toBe(true);
+        expect(result[0][0].value).toBe(1); // Value should be toggled
+        expect(result[0][0].friendCount).toBe(2); // Other properties preserved
+    });
+
+    it('should set isBeingDrawn to true even if it was already true', () => {
+        const original = [
+            [{ value: 1, friendCount: 5, isBeingDrawn: true }]
+        ];
+        const result = toggleCellValue(original, 0, 0);
+
+        expect(result[0][0].isBeingDrawn).toBe(true);
+        expect(result[0][0].value).toBe(0); // Value should be toggled
+    });
+});
+
+describe('setCellValue', () => {
+    it('should set cell value from 0 to 1', () => {
+        const original = [
+            [{ value: 0, friendCount: 2 }, { value: 1, friendCount: 3 }],
+            [{ value: 1, friendCount: 1 }, { value: 0, friendCount: 4 }]
+        ];
+        const result = setCellValue(original, 0, 0, 1);
+        expect(result[0][0].value).toBe(1);
+    });
+
+    it('should set cell value from 1 to 0', () => {
+        const original = [
+            [{ value: 1, friendCount: 2 }, { value: 1, friendCount: 3 }],
+            [{ value: 1, friendCount: 1 }, { value: 0, friendCount: 4 }]
+        ];
+        const result = setCellValue(original, 0, 0, 0);
+        expect(result[0][0].value).toBe(0);
+    });
+
+    it('should be idempotent: setting 0 to 0 keeps it 0', () => {
+        const original = [
+            [{ value: 0, friendCount: 2 }]
+        ];
+        const result = setCellValue(original, 0, 0, 0);
+        expect(result[0][0].value).toBe(0);
+    });
+
+    it('should be idempotent: setting 1 to 1 keeps it 1', () => {
+        const original = [
+            [{ value: 1, friendCount: 5 }]
+        ];
+        const result = setCellValue(original, 0, 0, 1);
+        expect(result[0][0].value).toBe(1);
+    });
+
+    it('should not modify the original map (immutability)', () => {
+        const original = [
+            [{ value: 0, friendCount: 2 }]
+        ];
+        const result = setCellValue(original, 0, 0, 1);
+
+        expect(original[0][0].value).toBe(0); // Original unchanged
+        expect(result[0][0].value).toBe(1);   // Result changed
+    });
+
+    it('should preserve other cells unchanged', () => {
+        const original = [
+            [{ value: 0, friendCount: 2 }, { value: 1, friendCount: 3 }],
+            [{ value: 1, friendCount: 1 }, { value: 0, friendCount: 4 }]
+        ];
+        const result = setCellValue(original, 0, 0, 1);
+
+        // Only (0,0) should change
+        expect(result[0][0].value).toBe(1);
+        expect(result[0][1].value).toBe(1);
+        expect(result[1][0].value).toBe(1);
+        expect(result[1][1].value).toBe(0);
+    });
+
+    it('should preserve friendCount property', () => {
+        const original = [
+            [{ value: 0, friendCount: 5 }]
+        ];
+        const result = setCellValue(original, 0, 0, 1);
+
+        expect(result[0][0].friendCount).toBe(5);
+    });
+
+    it('should set isBeingDrawn to true', () => {
+        const original = [
+            [{ value: 0, friendCount: 2, isBeingDrawn: false }]
+        ];
+        const result = setCellValue(original, 0, 0, 1);
+
+        expect(result[0][0].isBeingDrawn).toBe(true);
+        expect(result[0][0].value).toBe(1);
+        expect(result[0][0].friendCount).toBe(2);
+    });
+
+    it('should set isBeingDrawn to true even if it was already true', () => {
+        const original = [
+            [{ value: 1, friendCount: 5, isBeingDrawn: true }]
+        ];
+        const result = setCellValue(original, 0, 0, 0);
+
+        expect(result[0][0].isBeingDrawn).toBe(true);
+        expect(result[0][0].value).toBe(0);
+    });
+
+    it('should handle setting corner cells', () => {
+        const original = [
+            [{ value: 0 }, { value: 1 }],
+            [{ value: 1 }, { value: 0 }]
+        ];
+
+        // Top-left: set to 1
+        expect(setCellValue(original, 0, 0, 1)[0][0].value).toBe(1);
+        // Top-right: set to 0
+        expect(setCellValue(original, 1, 0, 0)[0][1].value).toBe(0);
+        // Bottom-left: set to 0
+        expect(setCellValue(original, 0, 1, 0)[1][0].value).toBe(0);
+        // Bottom-right: set to 1
+        expect(setCellValue(original, 1, 1, 1)[1][1].value).toBe(1);
+    });
+
+    it('should handle setting center cells', () => {
+        const original = [
+            [{ value: 0 }, { value: 0 }, { value: 0 }],
+            [{ value: 0 }, { value: 1 }, { value: 0 }],
+            [{ value: 0 }, { value: 0 }, { value: 0 }]
+        ];
+        const result = setCellValue(original, 1, 1, 0);
+
+        expect(result[1][1].value).toBe(0);
+    });
+
+    it('should handle single cell map', () => {
+        const original = [[{ value: 0, friendCount: 0 }]];
+        const result = setCellValue(original, 0, 0, 1);
+
+        expect(result[0][0].value).toBe(1);
+        expect(original[0][0].value).toBe(0);
+    });
+
+    it('should return original map for out of bounds coordinates (negative x)', () => {
+        const original = [
+            [{ value: 0 }, { value: 1 }]
+        ];
+        const result = setCellValue(original, -1, 0, 1);
+
+        expect(result).toEqual(original);
+    });
+
+    it('should return original map for out of bounds coordinates (negative y)', () => {
+        const original = [
+            [{ value: 0 }, { value: 1 }]
+        ];
+        const result = setCellValue(original, 0, -1, 1);
+
+        expect(result).toEqual(original);
+    });
+
+    it('should return original map for out of bounds coordinates (x too large)', () => {
+        const original = [
+            [{ value: 0 }, { value: 1 }]
+        ];
+        const result = setCellValue(original, 10, 0, 1);
+
+        expect(result).toEqual(original);
+    });
+
+    it('should return original map for out of bounds coordinates (y too large)', () => {
+        const original = [
+            [{ value: 0 }, { value: 1 }]
+        ];
+        const result = setCellValue(original, 0, 10, 1);
+
+        expect(result).toEqual(original);
+    });
+
+    it('should handle empty map gracefully', () => {
+        const original = [];
+        const result = setCellValue(original, 0, 0, 1);
+
+        expect(result).toEqual([]);
+    });
+
+    it('should return original map for invalid value (not 0 or 1)', () => {
+        const original = [
+            [{ value: 0, friendCount: 2 }]
+        ];
+        const result1 = setCellValue(original, 0, 0, 2);
+        const result2 = setCellValue(original, 0, 0, -1);
+        const result3 = setCellValue(original, 0, 0, 999);
+
+        expect(result1).toEqual(original);
+        expect(result2).toEqual(original);
+        expect(result3).toEqual(original);
+    });
+
+    it('should work correctly with larger maps', () => {
+        const original = generateMap(10);
+        const result = setCellValue(original, 5, 5, 1);
+
+        expect(result[5][5].value).toBe(1);
+        expect(result[5][5].isBeingDrawn).toBe(true);
+    });
+
+    it('should preserve all other properties when setting value', () => {
+        const original = [
+            [{ value: 0, friendCount: 3, customProp: 'test' }]
+        ];
+        const result = setCellValue(original, 0, 0, 1);
+
+        expect(result[0][0].value).toBe(1);
+        expect(result[0][0].friendCount).toBe(3);
+        expect(result[0][0].customProp).toBe('test');
+        expect(result[0][0].isBeingDrawn).toBe(true);
+    });
+});
+
+describe('applyOrganicIterations', () => {
+    it('should return map unchanged with 0 iterations (but with friendCount)', () => {
+        const original = [
+            [{ value: 1 }, { value: 0 }],
+            [{ value: 0 }, { value: 1 }]
+        ];
+        const result = applyOrganicIterations(original, 0);
+
+        // Values should be unchanged
+        expect(result[0][0].value).toBe(1);
+        expect(result[0][1].value).toBe(0);
+        expect(result[1][0].value).toBe(0);
+        expect(result[1][1].value).toBe(1);
+
+        // But friendCount should be calculated
+        expect(result[0][0]).toHaveProperty('friendCount');
+    });
+
+    it('should not modify the original map (immutability)', () => {
+        const original = [
+            [{ value: 1 }, { value: 1 }, { value: 1 }],
+            [{ value: 1 }, { value: 0 }, { value: 1 }],
+            [{ value: 1 }, { value: 1 }, { value: 1 }]
+        ];
+        const result = applyOrganicIterations(original, 1);
+
+        // Original should remain unchanged (no friendCount)
+        expect(original[0][0]).not.toHaveProperty('friendCount');
+        expect(result[0][0]).toHaveProperty('friendCount');
+    });
+
+    it('should apply cave rules correctly for 1 iteration', () => {
+        // Lonely wall (1 with 0 neighbors) should die
+        const original = [
+            [{ value: 0 }, { value: 0 }, { value: 0 }],
+            [{ value: 0 }, { value: 1 }, { value: 0 }],
+            [{ value: 0 }, { value: 0 }, { value: 0 }]
+        ];
+        const result = applyOrganicIterations(original, 1);
+
+        // Wall with 0 neighbors should die (needs 4+ to survive)
+        expect(result[1][1].value).toBe(0);
+    });
+
+    it('should apply cave rules correctly for wall survival', () => {
+        // Wall with enough neighbors should survive
+        const original = [
+            [{ value: 1 }, { value: 1 }, { value: 1 }],
+            [{ value: 1 }, { value: 1 }, { value: 1 }],
+            [{ value: 1 }, { value: 1 }, { value: 1 }]
+        ];
+        const result = applyOrganicIterations(original, 1);
+
+        // Corner cells have 3 neighbors (below threshold of 4), should die
+        expect(result[0][0].value).toBe(0);
+        expect(result[0][2].value).toBe(0);
+        expect(result[2][0].value).toBe(0);
+        expect(result[2][2].value).toBe(0);
+
+        // Edge cells have 5 neighbors (above threshold), should survive
+        expect(result[0][1].value).toBe(1);
+        expect(result[1][0].value).toBe(1);
+        expect(result[1][2].value).toBe(1);
+        expect(result[2][1].value).toBe(1);
+
+        // Center cell has 8 neighbors, should survive
+        expect(result[1][1].value).toBe(1);
+    });
+
+    it('should apply multiple iterations correctly', () => {
+        const original = generateMap(10);
+        const result = applyOrganicIterations(original, 3);
+
+        // Result should have friendCount calculated
+        result.forEach(row => {
+            row.forEach(cell => {
+                expect(cell).toHaveProperty('friendCount');
+                expect(cell.friendCount).toBeGreaterThanOrEqual(0);
+                expect(cell.friendCount).toBeLessThanOrEqual(8);
+            });
+        });
+    });
+
+    it('should handle empty map gracefully', () => {
+        const original = [];
+        const result = applyOrganicIterations(original, 2);
+
+        expect(result).toEqual([]);
+    });
+
+    it('should handle single cell map', () => {
+        const original = [[{ value: 1 }]];
+        const result = applyOrganicIterations(original, 1);
+
+        expect(result.length).toBe(1);
+        expect(result[0].length).toBe(1);
+        expect(result[0][0]).toHaveProperty('friendCount');
+        expect(result[0][0].friendCount).toBe(0); // No neighbors
+    });
+
+    it('should produce deterministic results for same input', () => {
+        const original = [
+            [{ value: 1 }, { value: 0 }, { value: 1 }],
+            [{ value: 0 }, { value: 1 }, { value: 0 }],
+            [{ value: 1 }, { value: 0 }, { value: 1 }]
+        ];
+
+        const result1 = applyOrganicIterations(original, 2);
+        const result2 = applyOrganicIterations(original, 2);
+
+        // Same input should produce same output
+        expect(result1).toEqual(result2);
+    });
+
+    it('should calculate final friendCount for rendering', () => {
+        const original = generateMap(5);
+        const result = applyOrganicIterations(original, 2);
+
+        // All cells should have friendCount
+        result.forEach(row => {
+            row.forEach(cell => {
+                expect(cell).toHaveProperty('friendCount');
+                expect(typeof cell.friendCount).toBe('number');
+            });
+        });
+    });
+
+    it('should clear all isBeingDrawn flags after iterations', () => {
+        const original = [
+            [{ value: 1, isBeingDrawn: true }, { value: 0, isBeingDrawn: true }],
+            [{ value: 1, isBeingDrawn: false }, { value: 0, isBeingDrawn: true }]
+        ];
+        const result = applyOrganicIterations(original, 1);
+
+        // All cells should have isBeingDrawn set to false
+        result.forEach(row => {
+            row.forEach(cell => {
+                expect(cell.isBeingDrawn).toBe(false);
+            });
+        });
+    });
+
+    it('should clear isBeingDrawn flags even with 0 iterations', () => {
+        const original = [
+            [{ value: 1, isBeingDrawn: true }],
+            [{ value: 0, isBeingDrawn: true }]
+        ];
+        const result = applyOrganicIterations(original, 0);
+
+        // All cells should have isBeingDrawn set to false
+        result.forEach(row => {
+            row.forEach(cell => {
+                expect(cell.isBeingDrawn).toBe(false);
+            });
+        });
+    });
+});
+
+describe('getCellsInBrushArea', () => {
+    it('should return single cell for 1x1 brush', () => {
+        const result = getCellsInBrushArea(5, 5, 1, 10);
+        expect(result).toEqual([{ x: 5, y: 5 }]);
+    });
+
+    it('should return 4 cells for 2x2 brush centered on position', () => {
+        const result = getCellsInBrushArea(5, 5, 2, 10);
+        expect(result).toHaveLength(4);
+        expect(result).toContainEqual({ x: 4, y: 4 });
+        expect(result).toContainEqual({ x: 4, y: 5 });
+        expect(result).toContainEqual({ x: 5, y: 4 });
+        expect(result).toContainEqual({ x: 5, y: 5 });
+    });
+
+    it('should return 9 cells for 3x3 brush', () => {
+        const result = getCellsInBrushArea(5, 5, 3, 10);
+        expect(result).toHaveLength(9);
+        // Verify center and corners
+        expect(result).toContainEqual({ x: 5, y: 5 }); // center
+        expect(result).toContainEqual({ x: 4, y: 4 }); // top-left
+        expect(result).toContainEqual({ x: 6, y: 6 }); // bottom-right
+    });
+
+    it('should only return valid cells near top-left corner', () => {
+        const result = getCellsInBrushArea(0, 0, 2, 10);
+        // At corner (0,0) with 2x2 brush, only 1 cell should be valid
+        expect(result).toHaveLength(1);
+        expect(result).toContainEqual({ x: 0, y: 0 });
+    });
+
+    it('should only return valid cells near top edge', () => {
+        const result = getCellsInBrushArea(1, 0, 2, 10);
+        // At top edge (1,0) with 2x2 brush, only 2 cells should be valid
+        expect(result).toHaveLength(2);
+        expect(result).toContainEqual({ x: 0, y: 0 });
+        expect(result).toContainEqual({ x: 1, y: 0 });
+    });
+
+    it('should only return valid cells near bottom-right corner', () => {
+        const result = getCellsInBrushArea(9, 9, 2, 10);
+        // At corner (9,9) with 2x2 brush, 4 cells should be valid: (8,8), (8,9), (9,8), (9,9)
+        expect(result).toHaveLength(4);
+        expect(result).toContainEqual({ x: 8, y: 8 });
+        expect(result).toContainEqual({ x: 8, y: 9 });
+        expect(result).toContainEqual({ x: 9, y: 8 });
+        expect(result).toContainEqual({ x: 9, y: 9 });
+    });
+
+    it('should only return valid cells near right edge', () => {
+        const result = getCellsInBrushArea(9, 5, 2, 10);
+        // At right edge (9,5) with 2x2 brush, 4 cells should be valid: (8,4), (8,5), (9,4), (9,5)
+        expect(result).toHaveLength(4);
+        expect(result).toContainEqual({ x: 8, y: 4 });
+        expect(result).toContainEqual({ x: 8, y: 5 });
+        expect(result).toContainEqual({ x: 9, y: 4 });
+        expect(result).toContainEqual({ x: 9, y: 5 });
+    });
+
+    it('should handle brush completely outside bounds (negative)', () => {
+        const result = getCellsInBrushArea(-5, -5, 2, 10);
+        expect(result).toHaveLength(0);
+    });
+
+    it('should handle brush completely outside bounds (too large)', () => {
+        const result = getCellsInBrushArea(15, 15, 2, 10);
+        expect(result).toHaveLength(0);
+    });
+
+    it('should handle 5x5 brush in center', () => {
+        const result = getCellsInBrushArea(5, 5, 5, 10);
+        expect(result).toHaveLength(25);
+        // Verify it includes corners of brush area
+        expect(result).toContainEqual({ x: 3, y: 3 }); // top-left
+        expect(result).toContainEqual({ x: 7, y: 7 }); // bottom-right
+        expect(result).toContainEqual({ x: 5, y: 5 }); // center
+    });
+});
+
+describe('getCellColorWithDrawingState', () => {
+    it('should return black when isBeingDrawn is true and value is 0', () => {
+        const cell = { value: 0, friendCount: 5, isBeingDrawn: true };
+        expect(getCellColorWithDrawingState(cell)).toBe('#000000');
+    });
+
+    it('should return white when isBeingDrawn is true and value is 1', () => {
+        const cell = { value: 1, friendCount: 2, isBeingDrawn: true };
+        expect(getCellColorWithDrawingState(cell)).toBe('#ffffff');
+    });
+
+    it('should return red when isBeingDrawn is false and friendCount < 4', () => {
+        const cell = { value: 0, friendCount: 3, isBeingDrawn: false };
+        expect(getCellColorWithDrawingState(cell)).toBe('#aa0000');
+    });
+
+    it('should return red when isBeingDrawn is false and friendCount is 0', () => {
+        const cell = { value: 1, friendCount: 0, isBeingDrawn: false };
+        expect(getCellColorWithDrawingState(cell)).toBe('#aa0000');
+    });
+
+    it('should return green when isBeingDrawn is false and friendCount >= 4', () => {
+        const cell = { value: 1, friendCount: 4, isBeingDrawn: false };
+        expect(getCellColorWithDrawingState(cell)).toBe('#00aa00');
+    });
+
+    it('should return green when isBeingDrawn is false and friendCount is 8', () => {
+        const cell = { value: 0, friendCount: 8, isBeingDrawn: false };
+        expect(getCellColorWithDrawingState(cell)).toBe('#00aa00');
+    });
+
+    it('should default to false when isBeingDrawn is missing (friendCount < 4)', () => {
+        const cell = { value: 0, friendCount: 2 };
+        expect(getCellColorWithDrawingState(cell)).toBe('#aa0000');
+    });
+
+    it('should default to false when isBeingDrawn is missing (friendCount >= 4)', () => {
+        const cell = { value: 1, friendCount: 5 };
+        expect(getCellColorWithDrawingState(cell)).toBe('#00aa00');
+    });
+
+    it('should handle invalid cells gracefully (null)', () => {
+        expect(getCellColorWithDrawingState(null)).toBe('#000000');
+    });
+
+    it('should handle invalid cells gracefully (undefined)', () => {
+        expect(getCellColorWithDrawingState(undefined)).toBe('#000000');
+    });
+
+    it('should handle invalid cells gracefully (empty object)', () => {
+        expect(getCellColorWithDrawingState({})).toBe('#000000');
+    });
+
+    it('should prioritize drawing state over friendCount', () => {
+        // Even with high friendCount, drawing state should show black/white
+        const cell1 = { value: 0, friendCount: 8, isBeingDrawn: true };
+        expect(getCellColorWithDrawingState(cell1)).toBe('#000000');
+
+        const cell2 = { value: 1, friendCount: 0, isBeingDrawn: true };
+        expect(getCellColorWithDrawingState(cell2)).toBe('#ffffff');
     });
 });

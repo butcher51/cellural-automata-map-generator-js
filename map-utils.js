@@ -1,15 +1,124 @@
 // Pure utility functions for map generation
 import { WALL_SURVIVAL_THRESHOLD, FLOOR_TO_WALL_THRESHOLD } from './constants.js';
 
+// Create a deep copy of a 2D map array
+// Returns a new map with independent cell objects (no shared references)
+export function deepCopyMap(map) {
+    return map.map(row => row.map(cell => ({ ...cell })));
+}
+
+// Convert pixel coordinates to grid coordinates
+// Returns the grid cell {x, y} that contains the pixel
+export function pixelToGridCoordinate(pixelX, pixelY, boxSize) {
+    return {
+        x: Math.floor(pixelX / boxSize),
+        y: Math.floor(pixelY / boxSize)
+    };
+}
+
+// Get all cells that should be painted for a given brush size
+// Returns array of {x, y} coordinates within brush area and map bounds
+// brushSize: 1 = single cell, 2 = 2x2 area, 3 = 3x3 area, etc.
+// Brush is centered on (centerX, centerY)
+export function getCellsInBrushArea(centerX, centerY, brushSize, mapSize) {
+    const cells = [];
+    const halfBrush = Math.floor(brushSize / 2);
+
+    // Calculate brush boundaries
+    const startX = centerX - halfBrush;
+    const startY = centerY - halfBrush;
+    const endX = startX + brushSize;
+    const endY = startY + brushSize;
+
+    // Iterate through brush area and collect valid cells
+    for (let y = startY; y < endY; y++) {
+        for (let x = startX; x < endX; x++) {
+            // Only include cells within map bounds
+            if (x >= 0 && x < mapSize && y >= 0 && y < mapSize) {
+                cells.push({ x, y });
+            }
+        }
+    }
+
+    return cells;
+}
+
+// Toggle cell value (0→1, 1→0) at given coordinates
+// Sets isBeingDrawn flag to true to indicate cell is being actively drawn
+// Returns a new map (immutable operation)
+export function toggleCellValue(map, x, y) {
+    // Validate bounds
+    if (!map || map.length === 0) return map;
+    if (y < 0 || y >= map.length) return map;
+    if (x < 0 || !map[y] || x >= map[y].length) return map;
+
+    // Deep copy the map
+    const newMap = deepCopyMap(map);
+
+    // Toggle the value and mark as being drawn
+    newMap[y][x].value = newMap[y][x].value === 0 ? 1 : 0;
+    newMap[y][x].isBeingDrawn = true;
+
+    return newMap;
+}
+
+// Set cell to specific value (0 or 1) at given coordinates
+// Sets isBeingDrawn flag to true to indicate cell is being actively drawn
+// Returns a new map (immutable operation)
+export function setCellValue(map, x, y, value) {
+    // Validate bounds
+    if (!map || map.length === 0) return map;
+    if (y < 0 || y >= map.length) return map;
+    if (x < 0 || !map[y] || x >= map[y].length) return map;
+
+    // Validate value (must be 0 or 1)
+    if (value !== 0 && value !== 1) return map;
+
+    // Deep copy the map
+    const newMap = deepCopyMap(map);
+
+    // Set the value and mark as being drawn
+    newMap[y][x].value = value;
+    newMap[y][x].isBeingDrawn = true;
+
+    return newMap;
+}
+
+// Apply N iterations of cellular automaton to existing map
+// Clears all isBeingDrawn flags after iterations complete
+// Returns a new map with iterations applied (immutable operation)
+export function applyOrganicIterations(map, iterations) {
+    let currentMap = deepCopyMap(map);
+
+    // Run N iterations of: calculate friends → apply cave rules
+    for (let i = 0; i < iterations; i++) {
+        calculateAllFriendCounts(currentMap);
+        applyCaveRules(currentMap);
+    }
+
+    // Final friend count calculation for rendering
+    calculateAllFriendCounts(currentMap);
+
+    // Clear all drawing flags
+    for (let y = 0; y < currentMap.length; y++) {
+        for (let x = 0; x < currentMap[y].length; x++) {
+            currentMap[y][x].isBeingDrawn = false;
+        }
+    }
+
+    return currentMap;
+}
+
 // Generate a 2D array of cell objects
-// Each cell is an object with a value property (0 or 1)
+// Each cell is an object with a value property (0 or 1) and isBeingDrawn flag (false)
 export function generateMap(size) {
     const map = [];
     for (let y = 0; y < size; y++) {
         map[y] = [];
         for (let x = 0; x < size; x++) {
             map[y][x] = {
-                value: Math.floor(Math.random() * 2)
+                value: Math.floor(Math.random() * 2),
+                isBeingDrawn: false
             };
         }
     }
@@ -35,6 +144,31 @@ export function getCellColor(cell) {
     } else {
         return '#00aa00'; // Green
     }
+}
+
+// Get the color for a cell based on drawing state and friend count
+// When isBeingDrawn is true: returns simple black/white based on value
+// When isBeingDrawn is false: returns red/green based on friendCount (neighbor density)
+export function getCellColorWithDrawingState(cell) {
+    // Handle invalid cells
+    if (!cell || typeof cell !== 'object') {
+        return '#000000';
+    }
+
+    // If cell is being drawn, show simple black/white colors
+    if (cell.isBeingDrawn === true) {
+        return cell.value === 0 ? '#000000' : '#ffffff';
+    }
+
+    // Otherwise, use neighbor-based colors (defaults to this if isBeingDrawn is missing/false)
+    // Handle missing friendCount
+    if (cell.friendCount === undefined) {
+        return '#000000';
+    }
+
+    // Red (sparse): friendCount < 4
+    // Green (dense): friendCount >= 4
+    return cell.friendCount < WALL_SURVIVAL_THRESHOLD ? '#aa0000' : '#00aa00';
 }
 
 // Count the number of neighboring cells with value 1 for a single cell
@@ -111,16 +245,8 @@ export function applyCaveRules(map) {
 // iterations: number of generation cycles to run (0 = just random generation)
 export function generateOrganicMap(size, iterations) {
     // Start with random map
-    const map = generateMap(size);
+    const initialMap = generateMap(size);
 
-    // Run N iterations of: calculate friends → apply cave rules
-    for (let i = 0; i < iterations; i++) {
-        calculateAllFriendCounts(map);
-        applyCaveRules(map);
-    }
-
-    // Final friend count calculation for rendering
-    calculateAllFriendCounts(map);
-
-    return map;
+    // Apply organic iterations to the initial random map
+    return applyOrganicIterations(initialMap, iterations);
 }

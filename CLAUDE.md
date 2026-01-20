@@ -113,6 +113,8 @@ npm test
 npm run test:watch  # Keep running while you work
 ```
 
+Only and just only unit test. Do not open browser and try to test it, always let the user to test it manually. 
+
 ### Current Test Coverage
 
 - **generateMap()**: Tests verify correct dimensions, value constraints (0 or 1), randomness, edge cases, and array independence.
