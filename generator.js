@@ -1,5 +1,15 @@
-import { BOX_SIZE, MAP_SIZE, ITERATIONS } from './constants.js';
-import { generateMap, getCellColor, getCellColorWithDrawingState, getCellsInBrushArea, deepCopyMap, applyOrganicIterations, pixelToGridCoordinate, toggleCellValue, setCellValue } from './map-utils.js';
+import { BOX_SIZE, MAP_SIZE, ITERATIONS, ZOOM, CAMERA_SPEED } from './constants.js';
+import { generateMap, getCellColor, getCellColorWithDrawingState, getCellsInBrushArea, deepCopyMap, applyOrganicIterations, pixelToGridCoordinate, toggleCellValue, setCellValue, updateCamera, clampCamera } from './map-utils.js';
+import { initZoomPrevention } from './zoomPrevention.js';
+
+// Initialize zoom prevention
+initZoomPrevention();
+
+// Camera state
+let camera = { x: 0, y: 0 };
+
+// Track currently pressed keys
+const keys = {};
 
 const canvas = document.getElementById('canvas');
 const ctx = canvas.getContext('2d');
@@ -37,6 +47,15 @@ window.addEventListener('resize', () => {
     canvas.height = window.innerHeight;
     ctx.fillStyle = '#2a2a2a';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
+});
+
+// Keyboard event listeners for camera movement
+window.addEventListener('keydown', (e) => {
+    keys[e.key] = true;
+});
+
+window.addEventListener('keyup', (e) => {
+    keys[e.key] = false;
 });
 
 // Helper function to paint cells during drag with 2x2 brush
@@ -123,16 +142,24 @@ canvas.addEventListener('mouseup', handleMouseUp);
 canvas.addEventListener('mouseleave', handleMouseUp);
 
 // Render the map with colors based on cell objects and sprite numbers
-function renderMap(map, ctx, boxSize, sprite) {
+function renderMap(map, ctx, boxSize, sprite, cameraOffset, zoom) {
+    const scaledSize = boxSize * zoom;
+
     for (let y = 0; y < map.length; y++) {
         for (let x = 0; x < map[y].length; x++) {
             const cell = map[y][x];
-            const cellX = x * boxSize;
-            const cellY = y * boxSize;
+            const cellX = (x * scaledSize) - cameraOffset.x;
+            const cellY = (y * scaledSize) - cameraOffset.y;
+
+            // Skip cells outside viewport for performance
+            if (cellX + scaledSize < 0 || cellX > ctx.canvas.width ||
+                cellY + scaledSize < 0 || cellY > ctx.canvas.height) {
+                continue;
+            }
 
             // Draw background (uses drawing state for temporary colors)
             ctx.fillStyle = getCellColorWithDrawingState(cell);
-            ctx.fillRect(cellX, cellY, boxSize, boxSize);
+            ctx.fillRect(cellX, cellY, scaledSize, scaledSize);
 
             // Draw friend count number from sprite sheet
             if (cell.friendCount !== undefined && sprite) {
@@ -142,10 +169,10 @@ function renderMap(map, ctx, boxSize, sprite) {
 
                 ctx.drawImage(
                     sprite,           // Image source
-                    spriteX, 0,       // Source x, y (which digit in sprite)
-                    10, 10,           // Source width, height (10x10)
+                    spriteX + 1, 1,   // Source x, y (skip 1px border)
+                    8, 8,             // Source width, height (inner 8x8 content)
                     cellX, cellY,     // Destination x, y (on canvas)
-                    boxSize, boxSize  // Destination width, height (10x10)
+                    scaledSize, scaledSize  // Destination width, height (8x8 at zoom=1)
                 );
             }
         }
@@ -156,12 +183,18 @@ function renderMap(map, ctx, boxSize, sprite) {
 function animate() {
     if (!spriteLoaded) return; // Don't render until sprite is loaded
 
+    // Update camera position based on pressed keys
+    camera = updateCamera(camera, keys, CAMERA_SPEED, ZOOM);
+
+    // Clamp camera to map boundaries
+    camera = clampCamera(camera, MAP_SIZE, BOX_SIZE, ZOOM, canvas.width, canvas.height);
+
     // Clear canvas with background color
     ctx.fillStyle = '#2a2a2a';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-    // Render the map with sprite
-    renderMap(map, ctx, BOX_SIZE, numberSprite);
+    // Render the map with sprite, camera offset, and zoom
+    renderMap(map, ctx, BOX_SIZE, numberSprite, camera, ZOOM);
 
     requestAnimationFrame(animate);
 }

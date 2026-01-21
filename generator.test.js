@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { generateMap, getCellColor, countNeighborFriends, calculateAllFriendCounts, applyCaveRules, generateOrganicMap, deepCopyMap, pixelToGridCoordinate, toggleCellValue, setCellValue, applyOrganicIterations, getCellsInBrushArea, getCellColorWithDrawingState } from './map-utils.js';
+import { generateMap, getCellColor, countNeighborFriends, calculateAllFriendCounts, applyCaveRules, generateOrganicMap, deepCopyMap, pixelToGridCoordinate, toggleCellValue, setCellValue, applyOrganicIterations, getCellsInBrushArea, getCellColorWithDrawingState, updateCamera, clampCamera } from './map-utils.js';
 
 describe('generateMap', () => {
     it('should return a 2D array', () => {
@@ -1285,5 +1285,148 @@ describe('getCellColorWithDrawingState', () => {
 
         const cell2 = { value: 1, friendCount: 0, isBeingDrawn: true };
         expect(getCellColorWithDrawingState(cell2)).toBe('#ffffff');
+    });
+});
+
+describe('updateCamera', () => {
+    it('should return unchanged position when no keys pressed', () => {
+        const camera = { x: 100, y: 100 };
+        const keys = {};
+        const result = updateCamera(camera, keys, 5, 1);
+        expect(result).toEqual({ x: 100, y: 100 });
+    });
+
+    it('should move up (decrease y) when W pressed', () => {
+        const camera = { x: 100, y: 100 };
+        const keys = { w: true };
+        const result = updateCamera(camera, keys, 5, 1);
+        expect(result.y).toBe(95);
+        expect(result.x).toBe(100);
+    });
+
+    it('should move down (increase y) when S pressed', () => {
+        const camera = { x: 100, y: 100 };
+        const keys = { s: true };
+        const result = updateCamera(camera, keys, 5, 1);
+        expect(result.y).toBe(105);
+        expect(result.x).toBe(100);
+    });
+
+    it('should move left (decrease x) when A pressed', () => {
+        const camera = { x: 100, y: 100 };
+        const keys = { a: true };
+        const result = updateCamera(camera, keys, 5, 1);
+        expect(result.x).toBe(95);
+        expect(result.y).toBe(100);
+    });
+
+    it('should move right (increase x) when D pressed', () => {
+        const camera = { x: 100, y: 100 };
+        const keys = { d: true };
+        const result = updateCamera(camera, keys, 5, 1);
+        expect(result.x).toBe(105);
+        expect(result.y).toBe(100);
+    });
+
+    it('should handle uppercase keys (W, A, S, D)', () => {
+        const camera = { x: 100, y: 100 };
+        const keys = { W: true, D: true };
+        const result = updateCamera(camera, keys, 5, 1);
+        expect(result.x).toBe(105);
+        expect(result.y).toBe(95);
+    });
+
+    it('should handle multiple keys pressed simultaneously', () => {
+        const camera = { x: 100, y: 100 };
+        const keys = { w: true, d: true };
+        const result = updateCamera(camera, keys, 5, 1);
+        expect(result.x).toBe(105);
+        expect(result.y).toBe(95);
+    });
+
+    it('should handle opposing keys (cancel out)', () => {
+        const camera = { x: 100, y: 100 };
+        const keys = { w: true, s: true };
+        const result = updateCamera(camera, keys, 5, 1);
+        expect(result.y).toBe(100); // W (-5) and S (+5) cancel out
+    });
+
+    it('should scale movement by zoom factor', () => {
+        const camera = { x: 100, y: 100 };
+        const keys = { d: true };
+        const result = updateCamera(camera, keys, 5, 2);
+        expect(result.x).toBe(110); // 5 * 2 = 10
+    });
+
+    it('should not mutate original camera object', () => {
+        const camera = { x: 100, y: 100 };
+        const keys = { w: true };
+        updateCamera(camera, keys, 5, 1);
+        expect(camera).toEqual({ x: 100, y: 100 });
+    });
+});
+
+describe('clampCamera', () => {
+    it('should return position unchanged when within bounds', () => {
+        const camera = { x: 50, y: 50 };
+        const result = clampCamera(camera, 100, 8, 1, 400, 400);
+        expect(result).toEqual({ x: 50, y: 50 });
+    });
+
+    it('should clamp negative x to 0', () => {
+        const camera = { x: -50, y: 50 };
+        const result = clampCamera(camera, 100, 8, 1, 400, 400);
+        expect(result.x).toBe(0);
+        expect(result.y).toBe(50);
+    });
+
+    it('should clamp negative y to 0', () => {
+        const camera = { x: 50, y: -50 };
+        const result = clampCamera(camera, 100, 8, 1, 400, 400);
+        expect(result.x).toBe(50);
+        expect(result.y).toBe(0);
+    });
+
+    it('should clamp x to max when exceeding world width', () => {
+        // World: 100 * 8 * 1 = 800, viewport: 400, max = 800 - 400 = 400
+        const camera = { x: 500, y: 50 };
+        const result = clampCamera(camera, 100, 8, 1, 400, 400);
+        expect(result.x).toBe(400);
+        expect(result.y).toBe(50);
+    });
+
+    it('should clamp y to max when exceeding world height', () => {
+        // World: 100 * 8 * 1 = 800, viewport: 400, max = 800 - 400 = 400
+        const camera = { x: 50, y: 600 };
+        const result = clampCamera(camera, 100, 8, 1, 400, 400);
+        expect(result.x).toBe(50);
+        expect(result.y).toBe(400);
+    });
+
+    it('should handle case when viewport is larger than world (return 0, 0)', () => {
+        // World: 10 * 8 * 1 = 80, viewport: 800
+        const camera = { x: 100, y: 100 };
+        const result = clampCamera(camera, 10, 8, 1, 800, 800);
+        expect(result).toEqual({ x: 0, y: 0 });
+    });
+
+    it('should account for zoom in world size calculation', () => {
+        // World: 100 * 8 * 2 = 1600, viewport: 400, max = 1600 - 400 = 1200
+        const camera = { x: 1300, y: 50 };
+        const result = clampCamera(camera, 100, 8, 2, 400, 400);
+        expect(result.x).toBe(1200);
+    });
+
+    it('should not mutate original camera object', () => {
+        const camera = { x: -50, y: -50 };
+        clampCamera(camera, 100, 8, 1, 400, 400);
+        expect(camera).toEqual({ x: -50, y: -50 });
+    });
+
+    it('should handle edge case at exact boundary', () => {
+        // World: 100 * 8 * 1 = 800, viewport: 400, max = 400
+        const camera = { x: 400, y: 400 };
+        const result = clampCamera(camera, 100, 8, 1, 400, 400);
+        expect(result).toEqual({ x: 400, y: 400 });
     });
 });

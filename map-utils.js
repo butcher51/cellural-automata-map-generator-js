@@ -250,3 +250,33 @@ export function generateOrganicMap(size, iterations) {
     // Apply organic iterations to the initial random map
     return applyOrganicIterations(initialMap, iterations);
 }
+
+// Update camera position based on pressed keys
+// Returns new camera position { x, y }
+export function updateCamera(camera, keys, speed, zoom) {
+    let x = camera.x;
+    let y = camera.y;
+    const adjustedSpeed = speed * zoom;
+
+    if (keys.w || keys.W) y -= adjustedSpeed;
+    if (keys.s || keys.S) y += adjustedSpeed;
+    if (keys.a || keys.A) x -= adjustedSpeed;
+    if (keys.d || keys.D) x += adjustedSpeed;
+
+    return { x, y };
+}
+
+// Clamp camera to map boundaries
+// Returns clamped camera position { x, y }
+export function clampCamera(camera, mapSize, boxSize, zoom, viewportWidth, viewportHeight) {
+    const worldWidth = mapSize * boxSize * zoom;
+    const worldHeight = mapSize * boxSize * zoom;
+
+    const maxX = Math.max(0, worldWidth - viewportWidth);
+    const maxY = Math.max(0, worldHeight - viewportHeight);
+
+    return {
+        x: Math.max(0, Math.min(camera.x, maxX)),
+        y: Math.max(0, Math.min(camera.y, maxY))
+    };
+}
