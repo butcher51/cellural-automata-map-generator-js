@@ -44,8 +44,8 @@ ctx.webkitImageSmoothingEnabled = false;
 ctx.msImageSmoothingEnabled = false;
 
 // Set canvas size to fill the window
-canvas.width = window.innerWidth;
-canvas.height = window.innerHeight;
+canvas.width = Math.floor(window.innerWidth / 2) * 2;
+canvas.height = Math.floor(window.innerHeight / 2) * 2;
 
 // Fill canvas with blank color
 ctx.fillStyle = "#2a2a2a";
