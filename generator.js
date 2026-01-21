@@ -1,4 +1,4 @@
-import { BOX_SIZE, MAP_SIZE, ITERATIONS, ZOOM, CAMERA_SPEED } from './constants.js';
+import { BOX_SIZE, MAP_SIZE, ITERATIONS, ZOOM as DEFAULT_ZOOM, CAMERA_SPEED } from './constants.js';
 import { generateMap, getCellColor, getCellColorWithDrawingState, getCellsInBrushArea, deepCopyMap, applyOrganicIterations, pixelToGridCoordinate, toggleCellValue, setCellValue, updateCamera, clampCamera } from './map-utils.js';
 import { initZoomPrevention } from './zoomPrevention.js';
 
@@ -7,6 +7,11 @@ initZoomPrevention();
 
 // Camera state
 let camera = { x: 0, y: 0 };
+
+// Zoom state (mutable, can be changed at runtime)
+let zoom = DEFAULT_ZOOM;
+const MIN_ZOOM = 1;
+const MAX_ZOOM = 8;
 
 // Track currently pressed keys
 const keys = {};
@@ -49,9 +54,16 @@ window.addEventListener('resize', () => {
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 });
 
-// Keyboard event listeners for camera movement
+// Keyboard event listeners for camera movement and zoom
 window.addEventListener('keydown', (e) => {
     keys[e.key] = true;
+
+    // Zoom controls: + to zoom in, - to zoom out
+    if (e.key === '+' || e.key === '=') {
+        zoom = Math.min(zoom + 1, MAX_ZOOM);
+    } else if (e.key === '-' || e.key === '_') {
+        zoom = Math.max(zoom - 1, MIN_ZOOM);
+    }
 });
 
 window.addEventListener('keyup', (e) => {
@@ -68,8 +80,12 @@ function paintCellAtPosition(event) {
     const pixelX = event.clientX - rect.left;
     const pixelY = event.clientY - rect.top;
 
-    // Convert to grid coordinates (center of brush)
-    const { x, y } = pixelToGridCoordinate(pixelX, pixelY, BOX_SIZE);
+    // Convert screen pixel to world pixel (add camera offset)
+    const worldPixelX = pixelX + camera.x;
+    const worldPixelY = pixelY + camera.y;
+
+    // Convert to grid coordinates (center of brush) using scaled box size
+    const { x, y } = pixelToGridCoordinate(worldPixelX, worldPixelY, BOX_SIZE * zoom);
 
     // Validate center cell bounds
     if (x < 0 || x >= MAP_SIZE || y < 0 || y >= MAP_SIZE) {
@@ -95,19 +111,8 @@ function handleMouseDown(event) {
     isDrawing = true;
     paintedCellsInStroke = new Set();
 
-    // Determine target value from first clicked cell
-    const rect = canvas.getBoundingClientRect();
-    const pixelX = event.clientX - rect.left;
-    const pixelY = event.clientY - rect.top;
-    const { x, y } = pixelToGridCoordinate(pixelX, pixelY, BOX_SIZE);
-
-    // Validate bounds and set target value
-    if (x >= 0 && x < MAP_SIZE && y >= 0 && y < MAP_SIZE) {
-        const currentValue = map[y][x].value;
-        paintTargetValue = currentValue === 0 ? 0 : 1; // Invert current value
-    } else {
-        paintTargetValue = 1; // Default if clicking out of bounds
-    }
+    // Left click (button 0) = draw (1), Right click (button 2) = erase (0)
+    paintTargetValue = event.button === 2 ? 0 : 1;
 
     // Paint the initial cells with brush
     paintCellAtPosition(event);
@@ -132,6 +137,9 @@ function handleMouseUp(event) {
     // NOW rerun cellular automaton iterations (clears isBeingDrawn flags)
     map = applyOrganicIterations(map, ITERATIONS);
 }
+
+// Block browser context menu on canvas (for right-click erase)
+canvas.addEventListener('contextmenu', (e) => e.preventDefault());
 
 // Attach mouse event listeners for drag-to-paint
 canvas.addEventListener('mousedown', handleMouseDown);
@@ -169,7 +177,7 @@ function renderMap(map, ctx, boxSize, sprite, cameraOffset, zoom) {
 
                 ctx.drawImage(
                     sprite,           // Image source
-                    spriteX + 1, 1,   // Source x, y (skip 1px border)
+                    spriteX, 1,   // Source x, y (skip 1px border)
                     8, 8,             // Source width, height (inner 8x8 content)
                     cellX, cellY,     // Destination x, y (on canvas)
                     scaledSize, scaledSize  // Destination width, height (8x8 at zoom=1)
@@ -184,17 +192,17 @@ function animate() {
     if (!spriteLoaded) return; // Don't render until sprite is loaded
 
     // Update camera position based on pressed keys
-    camera = updateCamera(camera, keys, CAMERA_SPEED, ZOOM);
+    camera = updateCamera(camera, keys, CAMERA_SPEED, zoom);
 
     // Clamp camera to map boundaries
-    camera = clampCamera(camera, MAP_SIZE, BOX_SIZE, ZOOM, canvas.width, canvas.height);
+    camera = clampCamera(camera, MAP_SIZE, BOX_SIZE, zoom, canvas.width, canvas.height);
 
     // Clear canvas with background color
     ctx.fillStyle = '#2a2a2a';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
     // Render the map with sprite, camera offset, and zoom
-    renderMap(map, ctx, BOX_SIZE, numberSprite, camera, ZOOM);
+    renderMap(map, ctx, BOX_SIZE, numberSprite, camera, zoom);
 
     requestAnimationFrame(animate);
 }
