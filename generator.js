@@ -1,6 +1,24 @@
-import { BOX_SIZE, MAP_SIZE, ITERATIONS, ZOOM as DEFAULT_ZOOM, CAMERA_SPEED } from './constants.js';
-import { generateMap, getCellColor, getCellColorWithDrawingState, getCellsInBrushArea, deepCopyMap, applyOrganicIterations, pixelToGridCoordinate, toggleCellValue, setCellValue, updateCamera, clampCamera } from './map-utils.js';
-import { initZoomPrevention } from './zoomPrevention.js';
+import {
+  BOX_SIZE,
+  MAP_SIZE,
+  ITERATIONS,
+  ZOOM as DEFAULT_ZOOM,
+  CAMERA_SPEED,
+} from "./constants.js";
+import {
+  generateMap,
+  getCellColor,
+  getCellColorWithDrawingState,
+  getCellsInBrushArea,
+  deepCopyMap,
+  applyOrganicIterations,
+  pixelToGridCoordinate,
+  toggleCellValue,
+  setCellValue,
+  updateCamera,
+  clampCamera,
+} from "./map-utils.js";
+import { initZoomPrevention } from "./zoomPrevention.js";
 
 // Initialize zoom prevention
 initZoomPrevention();
@@ -16,15 +34,21 @@ const MAX_ZOOM = 8;
 // Track currently pressed keys
 const keys = {};
 
-const canvas = document.getElementById('canvas');
-const ctx = canvas.getContext('2d');
+const canvas = document.getElementById("canvas");
+const ctx = canvas.getContext("2d");
+
+// Disable image smoothing for crisp pixel art
+ctx.imageSmoothingEnabled = false;
+ctx.mozImageSmoothingEnabled = false;
+ctx.webkitImageSmoothingEnabled = false;
+ctx.msImageSmoothingEnabled = false;
 
 // Set canvas size to fill the window
 canvas.width = window.innerWidth;
 canvas.height = window.innerHeight;
 
 // Fill canvas with blank color
-ctx.fillStyle = '#2a2a2a';
+ctx.fillStyle = "#2a2a2a";
 ctx.fillRect(0, 0, canvas.width, canvas.height);
 
 // Initialize the map with organic cave patterns
@@ -37,174 +61,195 @@ let paintTargetValue = null; // null when not painting, 0 or 1 during stroke
 
 // Load number sprite sheet (100x10 PNG: nine 10x10 digits 0-8)
 const numberSprite = new Image();
-numberSprite.src = './numbers.png';
+numberSprite.src = "./numbers.png";
 
 // Wait for image to load before starting animation
 let spriteLoaded = false;
 numberSprite.onload = () => {
-    spriteLoaded = true;
-    animate();
+  spriteLoaded = true;
+  animate();
 };
 
 // Handle window resize
-window.addEventListener('resize', () => {
-    canvas.width = window.innerWidth;
-    canvas.height = window.innerHeight;
-    ctx.fillStyle = '#2a2a2a';
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
+window.addEventListener("resize", () => {
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+  // Re-disable image smoothing (canvas resize resets this setting)
+  ctx.imageSmoothingEnabled = false;
+  ctx.fillStyle = "#2a2a2a";
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
 });
 
 // Keyboard event listeners for camera movement and zoom
-window.addEventListener('keydown', (e) => {
-    keys[e.key] = true;
+window.addEventListener("keydown", (e) => {
+  keys[e.key] = true;
 
-    // Zoom controls: + to zoom in, - to zoom out
-    if (e.key === '+' || e.key === '=') {
-        zoom = Math.min(zoom + 1, MAX_ZOOM);
-    } else if (e.key === '-' || e.key === '_') {
-        zoom = Math.max(zoom - 1, MIN_ZOOM);
-    }
+  // Zoom controls: + to zoom in, - to zoom out
+  if (e.key === "+" || e.key === "=") {
+    zoom = Math.min(zoom + 1, MAX_ZOOM);
+  } else if (e.key === "-" || e.key === "_") {
+    zoom = Math.max(zoom - 1, MIN_ZOOM);
+  }
 });
 
-window.addEventListener('keyup', (e) => {
-    keys[e.key] = false;
+window.addEventListener("keyup", (e) => {
+  keys[e.key] = false;
 });
 
 // Helper function to paint cells during drag with 2x2 brush
 function paintCellAtPosition(event) {
-    // Safety: ensure we have a target value
-    if (paintTargetValue === null) return;
+  // Safety: ensure we have a target value
+  if (paintTargetValue === null) return;
 
-    // Get click coordinates relative to canvas
-    const rect = canvas.getBoundingClientRect();
-    const pixelX = event.clientX - rect.left;
-    const pixelY = event.clientY - rect.top;
+  // Get click coordinates relative to canvas
+  const rect = canvas.getBoundingClientRect();
+  const pixelX = event.clientX - rect.left;
+  const pixelY = event.clientY - rect.top;
 
-    // Convert screen pixel to world pixel (add camera offset)
-    const worldPixelX = pixelX + camera.x;
-    const worldPixelY = pixelY + camera.y;
+  // Convert screen pixel to world pixel (add camera offset)
+  const worldPixelX = pixelX + camera.x;
+  const worldPixelY = pixelY + camera.y;
 
-    // Convert to grid coordinates (center of brush) using scaled box size
-    const { x, y } = pixelToGridCoordinate(worldPixelX, worldPixelY, BOX_SIZE * zoom);
+  // Convert to grid coordinates (center of brush) using scaled box size
+  const { x, y } = pixelToGridCoordinate(
+    worldPixelX,
+    worldPixelY,
+    BOX_SIZE * zoom,
+  );
 
-    // Validate center cell bounds
-    if (x < 0 || x >= MAP_SIZE || y < 0 || y >= MAP_SIZE) {
-        return;
+  // Validate center cell bounds
+  if (x < 0 || x >= MAP_SIZE || y < 0 || y >= MAP_SIZE) {
+    return;
+  }
+
+  // Get all cells in 2x2 brush area
+  const brushSize = 2;
+  const cellsToPaint = getCellsInBrushArea(x, y, brushSize, MAP_SIZE);
+
+  // Paint each cell (avoid redundant sets within a single stroke)
+  for (const cell of cellsToPaint) {
+    const cellKey = `${cell.x},${cell.y}`;
+    if (!paintedCellsInStroke.has(cellKey)) {
+      map = setCellValue(map, cell.x, cell.y, paintTargetValue);
+      paintedCellsInStroke.add(cellKey);
     }
-
-    // Get all cells in 2x2 brush area
-    const brushSize = 2;
-    const cellsToPaint = getCellsInBrushArea(x, y, brushSize, MAP_SIZE);
-
-    // Paint each cell (avoid redundant sets within a single stroke)
-    for (const cell of cellsToPaint) {
-        const cellKey = `${cell.x},${cell.y}`;
-        if (!paintedCellsInStroke.has(cellKey)) {
-            map = setCellValue(map, cell.x, cell.y, paintTargetValue);
-            paintedCellsInStroke.add(cellKey);
-        }
-    }
+  }
 }
 
 // Handle mouse down to start painting
 function handleMouseDown(event) {
-    isDrawing = true;
-    paintedCellsInStroke = new Set();
+  isDrawing = true;
+  paintedCellsInStroke = new Set();
 
-    // Left click (button 0) = draw (1), Right click (button 2) = erase (0)
-    paintTargetValue = event.button === 2 ? 0 : 1;
+  // Left click (button 0) = draw (1), Right click (button 2) = erase (0)
+  paintTargetValue = event.button === 2 ? 0 : 1;
 
-    // Paint the initial cells with brush
-    paintCellAtPosition(event);
+  // Paint the initial cells with brush
+  paintCellAtPosition(event);
 }
 
 // Handle mouse move to continue painting
 function handleMouseMove(event) {
-    if (!isDrawing) return;
+  if (!isDrawing) return;
 
-    // Continue painting while dragging
-    paintCellAtPosition(event);
+  // Continue painting while dragging
+  paintCellAtPosition(event);
 }
 
 // Handle mouse up to finish painting and rerun iterations
 function handleMouseUp(event) {
-    if (!isDrawing) return;
+  if (!isDrawing) return;
 
-    isDrawing = false;
-    paintedCellsInStroke = new Set();
-    paintTargetValue = null; // Clear target value
+  isDrawing = false;
+  paintedCellsInStroke = new Set();
+  paintTargetValue = null; // Clear target value
 
-    // NOW rerun cellular automaton iterations (clears isBeingDrawn flags)
-    map = applyOrganicIterations(map, ITERATIONS);
+  // NOW rerun cellular automaton iterations (clears isBeingDrawn flags)
+  map = applyOrganicIterations(map, ITERATIONS);
 }
 
 // Block browser context menu on canvas (for right-click erase)
-canvas.addEventListener('contextmenu', (e) => e.preventDefault());
+canvas.addEventListener("contextmenu", (e) => e.preventDefault());
 
 // Attach mouse event listeners for drag-to-paint
-canvas.addEventListener('mousedown', handleMouseDown);
-canvas.addEventListener('mousemove', handleMouseMove);
-canvas.addEventListener('mouseup', handleMouseUp);
+canvas.addEventListener("mousedown", handleMouseDown);
+canvas.addEventListener("mousemove", handleMouseMove);
+canvas.addEventListener("mouseup", handleMouseUp);
 
 // Also handle mouse leaving canvas
-canvas.addEventListener('mouseleave', handleMouseUp);
+canvas.addEventListener("mouseleave", handleMouseUp);
 
 // Render the map with colors based on cell objects and sprite numbers
 function renderMap(map, ctx, boxSize, sprite, cameraOffset, zoom) {
-    const scaledSize = boxSize * zoom;
+  const scaledSize = boxSize * zoom;
 
-    for (let y = 0; y < map.length; y++) {
-        for (let x = 0; x < map[y].length; x++) {
-            const cell = map[y][x];
-            const cellX = (x * scaledSize) - cameraOffset.x;
-            const cellY = (y * scaledSize) - cameraOffset.y;
+  for (let y = 0; y < map.length; y++) {
+    for (let x = 0; x < map[y].length; x++) {
+      const cell = map[y][x];
+      const cellX = x * scaledSize - cameraOffset.x;
+      const cellY = y * scaledSize - cameraOffset.y;
 
-            // Skip cells outside viewport for performance
-            if (cellX + scaledSize < 0 || cellX > ctx.canvas.width ||
-                cellY + scaledSize < 0 || cellY > ctx.canvas.height) {
-                continue;
-            }
+      // Skip cells outside viewport for performance
+      if (
+        cellX + scaledSize < 0 ||
+        cellX > ctx.canvas.width ||
+        cellY + scaledSize < 0 ||
+        cellY > ctx.canvas.height
+      ) {
+        continue;
+      }
 
-            // Draw background (uses drawing state for temporary colors)
-            ctx.fillStyle = getCellColorWithDrawingState(cell);
-            ctx.fillRect(cellX, cellY, scaledSize, scaledSize);
+      // Draw background (uses drawing state for temporary colors)
+      ctx.fillStyle = getCellColorWithDrawingState(cell);
+      ctx.fillRect(cellX, cellY, scaledSize, scaledSize);
 
-            // Draw friend count number from sprite sheet
-            if (cell.friendCount !== undefined && sprite) {
-                const digit = cell.friendCount;
-                // Source position in sprite sheet: digit * 10 (each digit is 10px wide)
-                const spriteX = digit * 10;
+      // Draw friend count number from sprite sheet
+      if (cell.friendCount !== undefined && sprite) {
+        const digit = cell.friendCount;
+        // Source position in sprite sheet: digit * 10 (each digit is 10px wide)
+        const spriteX = digit * 10;
 
-                ctx.drawImage(
-                    sprite,           // Image source
-                    spriteX, 1,   // Source x, y (skip 1px border)
-                    8, 8,             // Source width, height (inner 8x8 content)
-                    cellX, cellY,     // Destination x, y (on canvas)
-                    scaledSize, scaledSize  // Destination width, height (8x8 at zoom=1)
-                );
-            }
-        }
+        ctx.drawImage(
+          sprite, // Image source
+          spriteX + 1,
+          1, // Source x, y (skip 1px border)
+          8,
+          8, // Source width, height (inner 8x8 content)
+          cellX,
+          cellY, // Destination x, y (on canvas)
+          scaledSize,
+          scaledSize, // Destination width, height (8x8 at zoom=1)
+        );
+      }
     }
+  }
 }
 
 // Animation loop
 function animate() {
-    if (!spriteLoaded) return; // Don't render until sprite is loaded
+  if (!spriteLoaded) return; // Don't render until sprite is loaded
 
-    // Update camera position based on pressed keys
-    camera = updateCamera(camera, keys, CAMERA_SPEED, zoom);
+  // Update camera position based on pressed keys
+  camera = updateCamera(camera, keys, CAMERA_SPEED, zoom);
 
-    // Clamp camera to map boundaries
-    camera = clampCamera(camera, MAP_SIZE, BOX_SIZE, zoom, canvas.width, canvas.height);
+  // Clamp camera to map boundaries
+  camera = clampCamera(
+    camera,
+    MAP_SIZE,
+    BOX_SIZE,
+    zoom,
+    canvas.width,
+    canvas.height,
+  );
 
-    // Clear canvas with background color
-    ctx.fillStyle = '#2a2a2a';
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
+  // Clear canvas with background color
+  ctx.fillStyle = "#2a2a2a";
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-    // Render the map with sprite, camera offset, and zoom
-    renderMap(map, ctx, BOX_SIZE, numberSprite, camera, zoom);
+  // Render the map with sprite, camera offset, and zoom
+  renderMap(map, ctx, BOX_SIZE, numberSprite, camera, zoom);
 
-    requestAnimationFrame(animate);
+  requestAnimationFrame(animate);
 }
 
 // Note: animate() is now called from numberSprite.onload instead of immediately
