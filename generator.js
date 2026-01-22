@@ -4,6 +4,7 @@ import {
   ITERATIONS,
   ZOOM as DEFAULT_ZOOM,
   CAMERA_SPEED,
+  BLOCK_SIZE,
 } from "./constants.js";
 import {
   generateMap,
@@ -17,6 +18,10 @@ import {
   setCellValue,
   updateCamera,
   clampCamera,
+  alignToBlockGrid,
+  setBlockValue,
+  applyOrganicIterationsBlockAligned,
+  generateOrganicMapBlockAligned,
 } from "./map-utils.js";
 import { initZoomPrevention } from "./zoomPrevention.js";
 
@@ -51,8 +56,8 @@ canvas.height = Math.floor(window.innerHeight / 2) * 2;
 ctx.fillStyle = "#2a2a2a";
 ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-// Initialize the map with organic cave patterns
-let map = applyOrganicIterations(generateMap(MAP_SIZE), ITERATIONS);
+// Initialize the map with organic cave patterns (block-aligned)
+let map = generateOrganicMapBlockAligned(MAP_SIZE, ITERATIONS, BLOCK_SIZE);
 
 // State for drag-to-paint interaction
 let isDrawing = false;
@@ -96,7 +101,7 @@ window.addEventListener("keyup", (e) => {
   keys[e.key] = false;
 });
 
-// Helper function to paint cells during drag with 2x2 brush
+// Helper function to paint blocks during drag (2x2 aligned blocks)
 function paintCellAtPosition(event) {
   // Safety: ensure we have a target value
   if (paintTargetValue === null) return;
@@ -110,29 +115,28 @@ function paintCellAtPosition(event) {
   const worldPixelX = pixelX + camera.x;
   const worldPixelY = pixelY + camera.y;
 
-  // Convert to grid coordinates (center of brush) using scaled box size
+  // Convert to grid coordinates using scaled box size
   const { x, y } = pixelToGridCoordinate(
     worldPixelX,
     worldPixelY,
     BOX_SIZE * zoom,
   );
 
-  // Validate center cell bounds
+  // Validate cell bounds
   if (x < 0 || x >= MAP_SIZE || y < 0 || y >= MAP_SIZE) {
     return;
   }
 
-  // Get all cells in 2x2 brush area
-  const brushSize = 2;
-  const cellsToPaint = getCellsInBrushArea(x, y, brushSize, MAP_SIZE);
+  // Align to block grid and get block coordinates
+  const aligned = alignToBlockGrid(x, y, BLOCK_SIZE);
+  const blockX = aligned.x / BLOCK_SIZE;
+  const blockY = aligned.y / BLOCK_SIZE;
 
-  // Paint each cell (avoid redundant sets within a single stroke)
-  for (const cell of cellsToPaint) {
-    const cellKey = `${cell.x},${cell.y}`;
-    if (!paintedCellsInStroke.has(cellKey)) {
-      map = setCellValue(map, cell.x, cell.y, paintTargetValue);
-      paintedCellsInStroke.add(cellKey);
-    }
+  // Create unique key for this block (avoid redundant painting)
+  const blockKey = `${blockX},${blockY}`;
+  if (!paintedCellsInStroke.has(blockKey)) {
+    map = setBlockValue(map, blockX, blockY, paintTargetValue, BLOCK_SIZE);
+    paintedCellsInStroke.add(blockKey);
   }
 }
 
@@ -164,8 +168,8 @@ function handleMouseUp(event) {
   paintedCellsInStroke = new Set();
   paintTargetValue = null; // Clear target value
 
-  // NOW rerun cellular automaton iterations (clears isBeingDrawn flags)
-  map = applyOrganicIterations(map, ITERATIONS);
+  // NOW rerun cellular automaton iterations (block-aligned, clears isBeingDrawn flags)
+  map = applyOrganicIterationsBlockAligned(map, ITERATIONS, BLOCK_SIZE);
 }
 
 // Block browser context menu on canvas (for right-click erase)

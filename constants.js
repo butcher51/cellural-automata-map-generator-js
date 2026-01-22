@@ -20,3 +20,7 @@ export const ITERATIONS = 6;
 // Walls need 4+ wall neighbors to survive, floors need 5+ to become walls
 export const WALL_SURVIVAL_THRESHOLD = 4;
 export const FLOOR_TO_WALL_THRESHOLD = 5;
+
+// Block size for 2x2 aligned wall generation
+// Each "block" is BLOCK_SIZE x BLOCK_SIZE cells that share the same value
+export const BLOCK_SIZE = 2;
