@@ -1,0 +1,29 @@
+{
+    "eslint.enable": true,
+    "eslint.validate": ["javascript"],
+    "eslint.run": "onType",
+    "eslint.format.enable": true,
+    "editor.codeActionsOnSave": {
+        "source.fixAll.eslint": "explicit",
+        "source.organizeImports": "explicit"
+    },
+    "editor.formatOnSave": false,
+    "[javascript]": {
+        "editor.defaultFormatter": "dbaeumer.vscode-eslint",
+        "editor.formatOnSave": true
+    },
+    "files.exclude": {
+        "node_modules": true
+    },
+
+    // JavaScript IntelliSense and Auto-Import
+    "javascript.suggest.autoImports": true,
+    "javascript.updateImportsOnFileMove.enabled": "always",
+    "javascript.preferences.importModuleSpecifier": "relative",
+    "javascript.preferences.quoteStyle": "double",
+
+    // Enable IntelliSense suggestions
+    "javascript.suggest.completeFunctionCalls": true,
+    "javascript.suggest.names": true,
+    "javascript.suggest.paths": true
+}
