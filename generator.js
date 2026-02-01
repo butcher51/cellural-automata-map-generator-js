@@ -1,22 +1,19 @@
 import {
   BOX_SIZE,
-  MAP_SIZE,
-  ITERATIONS,
-  ZOOM as DEFAULT_ZOOM,
   CAMERA_SPEED,
+  ZOOM as DEFAULT_ZOOM,
+  ITERATIONS,
+  MAP_SIZE,
 } from "./constants.js";
 import {
+  applyOrganicIterations,
+  clampCamera,
   generateMap,
-  getCellColor,
   getCellColorWithDrawingState,
   getCellsInBrushArea,
-  deepCopyMap,
-  applyOrganicIterations,
   pixelToGridCoordinate,
-  toggleCellValue,
   setCellValue,
   updateCamera,
-  clampCamera,
 } from "./map-utils.js";
 import { initZoomPrevention } from "./zoomPrevention.js";
 
@@ -24,7 +21,9 @@ import { initZoomPrevention } from "./zoomPrevention.js";
 initZoomPrevention();
 
 // Camera state
-let camera = { x: 0, y: 0 };
+let camera = {
+  x: 0, y: 0, 
+};
 
 // Zoom state (mutable, can be changed at runtime)
 let zoom = DEFAULT_ZOOM;
@@ -32,7 +31,8 @@ const MIN_ZOOM = 1;
 const MAX_ZOOM = 8;
 
 // Track currently pressed keys
-const keys = {};
+const keys = {
+};
 
 const canvas = document.getElementById("canvas");
 const ctx = canvas.getContext("2d");
@@ -99,7 +99,9 @@ window.addEventListener("keyup", (e) => {
 // Helper function to paint cells during drag with 2x2 brush
 function paintCellAtPosition(event) {
   // Safety: ensure we have a target value
-  if (paintTargetValue === null) return;
+  if (paintTargetValue === null) {
+    return;
+  }
 
   // Get click coordinates relative to canvas
   const rect = canvas.getBoundingClientRect();
@@ -150,7 +152,9 @@ function handleMouseDown(event) {
 
 // Handle mouse move to continue painting
 function handleMouseMove(event) {
-  if (!isDrawing) return;
+  if (!isDrawing) {
+    return;
+  }
 
   // Continue painting while dragging
   paintCellAtPosition(event);
@@ -158,7 +162,9 @@ function handleMouseMove(event) {
 
 // Handle mouse up to finish painting and rerun iterations
 function handleMouseUp(event) {
-  if (!isDrawing) return;
+  if (!isDrawing) {
+    return;
+  }
 
   isDrawing = false;
   paintedCellsInStroke = new Set();
@@ -227,7 +233,9 @@ function renderMap(map, ctx, boxSize, sprite, cameraOffset, zoom) {
 
 // Animation loop
 function animate() {
-  if (!spriteLoaded) return; // Don't render until sprite is loaded
+  if (!spriteLoaded) {
+    return;
+  } // Don't render until sprite is loaded
 
   // Update camera position based on pressed keys
   camera = updateCamera(camera, keys, CAMERA_SPEED, zoom);

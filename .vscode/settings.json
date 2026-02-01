@@ -9,7 +9,7 @@
     },
     "editor.formatOnSave": false,
     "[javascript]": {
-        "editor.defaultFormatter": "dbaeumer.vscode-eslint",
+        "editor.defaultFormatter": "rvest.vs-code-prettier-eslint",
         "editor.formatOnSave": true
     },
     "files.exclude": {
