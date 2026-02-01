@@ -13,7 +13,7 @@ import {
   getCellsInBrushArea,
   pixelToGridCoordinate,
   setCellValue,
-  updateCamera,
+  updateCamera
 } from "./map-utils.js";
 import { initZoomPrevention } from "./zoomPrevention.js";
 
