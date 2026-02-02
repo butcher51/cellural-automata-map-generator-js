@@ -1,4 +1,5 @@
 import {
+  BACKGROUND_COLOR,
   BOX_SIZE,
   CAMERA_SPEED,
   ZOOM as DEFAULT_ZOOM,
@@ -15,7 +16,7 @@ import {
   setCellValue,
   updateCamera,
 } from "./map-utils.js";
-import { renderMap } from "./renderMap..js";
+import { renderMap } from "./renderMap.js";
 import { initZoomPrevention } from "./zoomPrevention.js";
 
 // Initialize zoom prevention
@@ -53,7 +54,7 @@ ctx.webkitImageSmoothingEnabled = false;
 ctx.msImageSmoothingEnabled = false;
 
 // Fill canvas with blank color
-ctx.fillStyle = "#2a2a2a";
+ctx.fillStyle = BACKGROUND_COLOR;
 ctx.fillRect(0, 0, canvas.width, canvas.height);
 
 // Initialize the map with organic cave patterns
@@ -80,12 +81,25 @@ let paintTargetValue = null; // null when not painting, 0 or 1 during stroke
 const numberSprite = new Image();
 numberSprite.src = "./numbers.png";
 
-// Wait for image to load before starting animation
+const tileMapSprite = new Image();
+tileMapSprite.src = "./assets/overworld.png";
+
+// Wait for both images to load before starting animation
 let spriteLoaded = false;
-numberSprite.onload = () => {
+
+Promise.allSettled([
+  new Promise((resolve, reject) => {
+    numberSprite.onload = resolve;
+    numberSprite.onerror = reject;
+  }),
+  new Promise((resolve, reject) => {
+    tileMapSprite.onload = resolve;
+    tileMapSprite.onerror = reject;
+  }),
+]).then(() => {
   spriteLoaded = true;
   animate();
-};
+});
 
 // Handle window resize
 window.addEventListener("resize", () => {
@@ -93,7 +107,7 @@ window.addEventListener("resize", () => {
   canvas.height = window.innerHeight;
   // Re-disable image smoothing (canvas resize resets this setting)
   ctx.imageSmoothingEnabled = false;
-  ctx.fillStyle = "#2a2a2a";
+  ctx.fillStyle = BACKGROUND_COLOR;
   ctx.fillRect(0, 0, canvas.width, canvas.height);
 });
 
@@ -222,11 +236,11 @@ function animate() {
   );
 
   // Clear canvas with background color
-  ctx.fillStyle = "#2a2a2a";
+  ctx.fillStyle = BACKGROUND_COLOR;
   ctx.fillRect(0, 0, canvas.width, canvas.height);
 
   // Render the map with sprite, camera offset, and zoom
-  renderMap(valueMap, tileMap, ctx, BOX_SIZE, numberSprite, camera, zoom);
+  renderMap(valueMap, tileMap, ctx, BOX_SIZE, numberSprite, tileMapSprite, camera, zoom);
 
   requestAnimationFrame(animate);
 }

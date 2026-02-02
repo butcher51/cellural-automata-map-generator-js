@@ -1,29 +1,63 @@
 import { MAP_SIZE } from "./constants.js";
 
+// tree tiles:  4854, 4855
+//              4878, 4879
+
 export function generateTreeTileMap(valueMap) {
 
   const tileMap = [];
 
-  let value;
   for (let y = 0; y < MAP_SIZE; y++) {
     tileMap[y] = [];
     const start = (y % 2 === 0) ? 0 : 1;
     for (let x = start; x < MAP_SIZE; x+=2) {   
 
       const sum = sumNeighborValues(valueMap, x, y);
-       
-     
-      if (x < MAP_SIZE) {
-        tileMap[y][x] = sum;
+      
+      if (sum > 2) {
+        if (y > 0 && x > 0) {
+          tileMap[y - 1][x - 1] = {sum, tile: 1225};
+        }
+        if (y > 0 && x < MAP_SIZE - 1) {
+          tileMap[y - 1][x] = {sum, tile: 1226};
+        }
+        if (x > 0) {
+          tileMap[y][x - 1] = {sum, tile: 1249};
+        }
+        if (x < MAP_SIZE - 1) {
+          tileMap[y][x] = {sum, tile: 1250};
+        }
+      } else {
+        if (y > 0 && x > 0) {
+          tileMap[y -1 ][x - 1] = {sum, tile: tileMap[y -1 ][x - 1]?.tile || 2};
+        }
+        if (y > 0 && x < MAP_SIZE - 1) {
+          tileMap[y - 1][x] = {sum, tile: tileMap[y - 1][x]?.tile || 1};
+        }
+        if (x > 0) {
+          tileMap[y][x - 1] = {sum, tile: tileMap[y][x - 1]?.tile || 2};
+        }
+        if (x < MAP_SIZE - 1) {
+          tileMap[y][x] = {sum, tile: tileMap[y][x]?.tile || 1};
+        }
       }
 
     }
   }
 
+  for (let y = 0; y < MAP_SIZE; y++) {
+    if (!tileMap[y]) {
+      continue;
+    }
+    for (let x = 0; x < MAP_SIZE; x++) {
+      if (tileMap[y][x]) {
+        tileMap[y][x].spritePosition = getTileSpritePosition(tileMap[y][x].tile);
+      }
+    }
+  }
 
   return tileMap;
 }
-
 
 
 
@@ -72,4 +106,19 @@ function sumNeighborValues(valueMap, x, y) {
 
   return sum;
 
+}
+
+
+
+function getTileSpritePosition(tileIndex) {
+  const tilesPerRow = 24;
+
+  tileIndex--;
+  const row = Math.floor(tileIndex / tilesPerRow);
+  const col = tileIndex % tilesPerRow;
+
+  return {
+    spriteX: col * 8,
+    spriteY: row * 8,
+  };
 }
