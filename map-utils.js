@@ -110,9 +110,6 @@ export function applyOrganicIterations(map, iterations) {
     applyCaveRules(currentMap);
   }
 
-  // Final friend count calculation for rendering
-  calculateAllFriendCounts(currentMap);
-
   // Clear all drawing flags
   for (let y = 0; y < currentMap.length; y++) {
     for (let x = 0; x < currentMap[y].length; x++) {
@@ -120,12 +117,16 @@ export function applyOrganicIterations(map, iterations) {
     }
   }
 
+
+  // Final friend count calculation for rendering
+  calculateAllFriendCounts(currentMap);
+
   return currentMap;
 }
 
 // Generate a 2D array of cell objects
 // Each cell is an object with a value property (0 or 1) and isBeingDrawn flag (false)
-export function generateMap(size) {
+export function generateNoiseMap(size) {
   const map = [];
   for (let y = 0; y < size; y++) {
     map[y] = [];
@@ -182,7 +183,7 @@ export function getCellColorWithDrawingState(cell) {
 
   // Red (sparse): friendCount < 4
   // Green (dense): friendCount >= 4
-  return cell.friendCount < WALL_SURVIVAL_THRESHOLD ? "#aa0000" : "#00aa00";
+  return cell.value !== 1 ? "#aa0000" : "#00aa00";
 }
 
 // Count the number of neighboring cells with value 1 for a single cell
@@ -269,7 +270,7 @@ export function applyCaveRules(map) {
 // iterations: number of generation cycles to run (0 = just random generation)
 export function generateOrganicMap(size, iterations) {
   // Start with random map
-  const initialMap = generateMap(size);
+  const initialMap = generateNoiseMap(size);
 
   // Apply organic iterations to the initial random map
   return applyOrganicIterations(initialMap, iterations);

@@ -5,16 +5,17 @@ import {
   ITERATIONS,
   MAP_SIZE,
 } from "./constants.js";
+import { generateTreeTileMap } from "./generateTreeTileMap.js";
 import {
   applyOrganicIterations,
   clampCamera,
-  generateMap,
-  getCellColorWithDrawingState,
+  generateNoiseMap,
   getCellsInBrushArea,
   pixelToGridCoordinate,
   setCellValue,
-  updateCamera
+  updateCamera,
 } from "./map-utils.js";
+import { renderMap } from "./renderMap..js";
 import { initZoomPrevention } from "./zoomPrevention.js";
 
 // Initialize zoom prevention
@@ -43,16 +44,32 @@ ctx.mozImageSmoothingEnabled = false;
 ctx.webkitImageSmoothingEnabled = false;
 ctx.msImageSmoothingEnabled = false;
 
-// Set canvas size to fill the window
-canvas.width = Math.floor(window.innerWidth / 2) * 2;
-canvas.height = Math.floor(window.innerHeight / 2) * 2;
+canvas.width = window.innerWidth;
+canvas.height = window.innerHeight;
+// Re-disable image smoothing (canvas resize resets this setting)
+ctx.imageSmoothingEnabled = false;
+ctx.mozImageSmoothingEnabled = false;
+ctx.webkitImageSmoothingEnabled = false;
+ctx.msImageSmoothingEnabled = false;
 
 // Fill canvas with blank color
 ctx.fillStyle = "#2a2a2a";
 ctx.fillRect(0, 0, canvas.width, canvas.height);
 
 // Initialize the map with organic cave patterns
-let map = applyOrganicIterations(generateMap(MAP_SIZE), ITERATIONS);
+let valueMap, tileMap;
+
+valueMap = applyOrganicIterations(generateNoiseMap(MAP_SIZE), ITERATIONS);
+
+generateMap();
+
+function generateMap() {
+
+  valueMap = applyOrganicIterations(valueMap, ITERATIONS);
+
+  tileMap = generateTreeTileMap(valueMap);
+}
+
 
 // State for drag-to-paint interaction
 let isDrawing = false;
@@ -132,7 +149,7 @@ function paintCellAtPosition(event) {
   for (const cell of cellsToPaint) {
     const cellKey = `${cell.x},${cell.y}`;
     if (!paintedCellsInStroke.has(cellKey)) {
-      map = setCellValue(map, cell.x, cell.y, paintTargetValue);
+      valueMap = setCellValue(valueMap, cell.x, cell.y, paintTargetValue);
       paintedCellsInStroke.add(cellKey);
     }
   }
@@ -171,7 +188,7 @@ function handleMouseUp(event) {
   paintTargetValue = null; // Clear target value
 
   // NOW rerun cellular automaton iterations (clears isBeingDrawn flags)
-  map = applyOrganicIterations(map, ITERATIONS);
+  generateMap();
 }
 
 // Block browser context menu on canvas (for right-click erase)
@@ -184,52 +201,6 @@ canvas.addEventListener("mouseup", handleMouseUp);
 
 // Also handle mouse leaving canvas
 canvas.addEventListener("mouseleave", handleMouseUp);
-
-// Render the map with colors based on cell objects and sprite numbers
-function renderMap(map, ctx, boxSize, sprite, cameraOffset, zoom) {
-  const scaledSize = boxSize * zoom;
-
-  for (let y = 0; y < map.length; y++) {
-    for (let x = 0; x < map[y].length; x++) {
-      const cell = map[y][x];
-      const cellX = x * scaledSize - cameraOffset.x;
-      const cellY = y * scaledSize - cameraOffset.y;
-
-      // Skip cells outside viewport for performance
-      if (
-        cellX + scaledSize < 0 ||
-        cellX > ctx.canvas.width ||
-        cellY + scaledSize < 0 ||
-        cellY > ctx.canvas.height
-      ) {
-        continue;
-      }
-
-      // Draw background (uses drawing state for temporary colors)
-      ctx.fillStyle = getCellColorWithDrawingState(cell);
-      ctx.fillRect(cellX, cellY, scaledSize, scaledSize);
-
-      // Draw friend count number from sprite sheet
-      if (cell.friendCount !== undefined && sprite) {
-        const digit = cell.friendCount;
-        // Source position in sprite sheet: digit * 10 (each digit is 10px wide)
-        const spriteX = digit * 10;
-
-        ctx.drawImage(
-          sprite, // Image source
-          spriteX + 1,
-          1, // Source x, y (skip 1px border)
-          8,
-          8, // Source width, height (inner 8x8 content)
-          cellX,
-          cellY, // Destination x, y (on canvas)
-          scaledSize,
-          scaledSize, // Destination width, height (8x8 at zoom=1)
-        );
-      }
-    }
-  }
-}
 
 // Animation loop
 function animate() {
@@ -255,7 +226,7 @@ function animate() {
   ctx.fillRect(0, 0, canvas.width, canvas.height);
 
   // Render the map with sprite, camera offset, and zoom
-  renderMap(map, ctx, BOX_SIZE, numberSprite, camera, zoom);
+  renderMap(valueMap, tileMap, ctx, BOX_SIZE, numberSprite, camera, zoom);
 
   requestAnimationFrame(animate);
 }

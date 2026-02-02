@@ -4,10 +4,10 @@
 export const BOX_SIZE = 8;
 
 // Grid dimensions (100x100 boxes = 10,000 boxes total)
-export const MAP_SIZE = 200;
+export const MAP_SIZE = 100;
 
 // Scale factor for rendering (1 = normal, 2 = 2x zoom, etc.)
-export const ZOOM = 1;
+export const ZOOM = 4;
 
 // Pixels per frame for camera movement
 export const CAMERA_SPEED = 5;
