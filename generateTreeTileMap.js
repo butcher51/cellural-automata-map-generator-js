@@ -29,16 +29,16 @@ export function generateTreeTileMap(valueMap) {
         }
       } else {
         if (y > 0 && x > 0) {
-          tileMap[y -1 ][x - 1] = {sum, tile: tileMap[y -1 ][x - 1]?.tile || 2};
+          tileMap[y -1 ][x - 1] = {sum, tile: tileMap[y -1 ][x - 1]?.tile || getGroundTile()};
         }
         if (y > 0 && x < MAP_SIZE - 1) {
-          tileMap[y - 1][x] = {sum, tile: tileMap[y - 1][x]?.tile || 1};
+          tileMap[y - 1][x] = {sum, tile: tileMap[y - 1][x]?.tile || getGroundTile()};
         }
         if (x > 0) {
-          tileMap[y][x - 1] = {sum, tile: tileMap[y][x - 1]?.tile || 2};
+          tileMap[y][x - 1] = {sum, tile: tileMap[y][x - 1]?.tile || getGroundTile()};
         }
         if (x < MAP_SIZE - 1) {
-          tileMap[y][x] = {sum, tile: tileMap[y][x]?.tile || 1};
+          tileMap[y][x] = {sum, tile: tileMap[y][x]?.tile || getGroundTile()};
         }
       }
 
@@ -59,6 +59,37 @@ export function generateTreeTileMap(valueMap) {
   return tileMap;
 }
 
+const groundTiles = [
+  {index: 1, chance: 1},
+  {index: 2, chance: 0.5},
+  {index: 3, chance:0.1},
+  {index: 4, chance: 0.1},
+  {index: 24 + 1, chance: 0.1},
+  {index: 24 + 2, chance: 0.1},
+  {index: 24 + 3, chance: 0.1},
+  {index: 24 + 4, chance: 0.1},
+  {index: 48 + 1, chance: 0.1},
+  {index: 48 + 2, chance: 0.1},
+  {index: 48 + 3, chance: 0.01},
+  {index: 48 + 4, chance: 0.01},
+  {index: 72 + 1, chance: 0.01},
+  {index: 72 + 2, chance: 0.01},
+  {index: 72 + 3, chance: 0.01},
+  {index: 72 + 4, chance: 0.01},
+  {index: 96 + 1, chance: 0.01},
+  {index: 96 + 2, chance: 0.01},
+  {index: 96 + 3, chance: 0.01},
+  {index: 96 + 4, chance: 0.01},
+];
+  
+function getGroundTile() {
+  return groundTiles.reduce((selected, tile) => {
+    if (Math.random() < tile.chance) {
+      return tile.index;
+    }
+    return selected;
+  }, 1);
+}
 
 
 function sumNeighborValues(valueMap, x, y) {
