@@ -1,21 +1,8 @@
-import {
-  BACKGROUND_COLOR,
-  BOX_SIZE,
-  CAMERA_SPEED,
-  ZOOM as DEFAULT_ZOOM,
-  ITERATIONS,
-  MAP_SIZE,
-} from "./constants.js";
+import { BACKGROUND_COLOR, BOX_SIZE, CAMERA_SPEED, ZOOM as DEFAULT_ZOOM, ITERATIONS, MAP_SIZE } from "./constants.js";
+import { generateGroundTileMap } from "./generateGroundMap.js";
 import { generateTreeTileMap } from "./generateTreeTileMap.js";
-import {
-  applyOrganicIterations,
-  clampCamera,
-  generateNoiseMap,
-  getCellsInBrushArea,
-  pixelToGridCoordinate,
-  setCellValue,
-  updateCamera,
-} from "./map-utils.js";
+import { generateWaterTileMap } from "./generateWaterTileMap.js";
+import { applyOrganicIterations, clampCamera, clearDrawingFlags, generateNoiseMap, getCellsInBrushArea, pixelToGridCoordinate, setCellValue, updateCamera } from "./map-utils.js";
 import { renderMap } from "./renderMap.js";
 import { initZoomPrevention } from "./zoomPrevention.js";
 
@@ -24,7 +11,8 @@ initZoomPrevention();
 
 // Camera state
 let camera = {
-  x: 0, y: 0, 
+  x: 0,
+  y: 0,
 };
 
 // Zoom state (mutable, can be changed at runtime)
@@ -33,8 +21,7 @@ const MIN_ZOOM = 1;
 const MAX_ZOOM = 8;
 
 // Track currently pressed keys.
-const keys = {
-};
+const keys = {};
 
 const canvas = document.getElementById("canvas");
 const ctx = canvas.getContext("2d");
@@ -58,19 +45,23 @@ ctx.fillStyle = BACKGROUND_COLOR;
 ctx.fillRect(0, 0, canvas.width, canvas.height);
 
 // Initialize the map with organic cave patterns
-let valueMap, tileMap;
+let valueMap, waterTileMap, groundTileMap, treeTileMap;
 
 valueMap = applyOrganicIterations(generateNoiseMap(MAP_SIZE), ITERATIONS);
 
-generateMap();
+groundTileMap = generateGroundTileMap(valueMap);
+
+waterTileMap = generateWaterTileMap(valueMap);
+
+treeTileMap = generateTreeTileMap(valueMap);
+
+// generateMap();
 
 function generateMap() {
-
-  valueMap = applyOrganicIterations(valueMap, ITERATIONS);
-
-  tileMap = generateTreeTileMap(valueMap);
+  //   valueMap = applyOrganicIterations(valueMap, ITERATIONS);
+  //   groundTileMap = generateGroundTileMap(valueMap);
+  //   treeTileMap = generateTreeTileMap(valueMap);
 }
-
 
 // State for drag-to-paint interaction
 let isDrawing = false;
@@ -79,7 +70,7 @@ let paintTargetValue = null; // null when not painting, 0 or 1 during stroke
 
 // Load number sprite sheet (100x10 PNG: nine 10x10 digits 0-8)
 const numberSprite = new Image();
-numberSprite.src = "./numbers.png";
+numberSprite.src = "./assets/numbers.png";
 
 const tileMapSprite = new Image();
 tileMapSprite.src = "./assets/overworld.png";
@@ -144,11 +135,7 @@ function paintCellAtPosition(event) {
   const worldPixelY = pixelY + camera.y;
 
   // Convert to grid coordinates (center of brush) using scaled box size
-  const { x, y } = pixelToGridCoordinate(
-    worldPixelX,
-    worldPixelY,
-    BOX_SIZE * zoom,
-  );
+  const { x, y } = pixelToGridCoordinate(worldPixelX, worldPixelY, BOX_SIZE * zoom);
 
   // Validate center cell bounds
   if (x < 0 || x >= MAP_SIZE || y < 0 || y >= MAP_SIZE) {
@@ -202,7 +189,11 @@ function handleMouseUp(event) {
   paintTargetValue = null; // Clear target value
 
   // NOW rerun cellular automaton iterations (clears isBeingDrawn flags)
-  generateMap();
+  //generateMap();
+  valueMap = applyOrganicIterations(valueMap, ITERATIONS);
+
+  treeTileMap = generateTreeTileMap(valueMap);
+  clearDrawingFlags(valueMap);
 }
 
 // Block browser context menu on canvas (for right-click erase)
@@ -226,21 +217,14 @@ function animate() {
   camera = updateCamera(camera, keys, CAMERA_SPEED, zoom);
 
   // Clamp camera to map boundaries
-  camera = clampCamera(
-    camera,
-    MAP_SIZE,
-    BOX_SIZE,
-    zoom,
-    canvas.width,
-    canvas.height,
-  );
+  camera = clampCamera(camera, MAP_SIZE, BOX_SIZE, zoom, canvas.width, canvas.height);
 
   // Clear canvas with background color
   ctx.fillStyle = BACKGROUND_COLOR;
   ctx.fillRect(0, 0, canvas.width, canvas.height);
 
   // Render the map with sprite, camera offset, and zoom
-  renderMap(valueMap, tileMap, ctx, BOX_SIZE, numberSprite, tileMapSprite, camera, zoom);
+  renderMap(valueMap, treeTileMap, groundTileMap, ctx, BOX_SIZE, numberSprite, tileMapSprite, camera, zoom);
 
   requestAnimationFrame(animate);
 }

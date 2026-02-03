@@ -1,47 +1,45 @@
 import { MAP_SIZE } from "./constants.js";
+import { getTileSpritePosition } from "./getTileSpritePosition.js";
 
 // tree tiles:  4854, 4855
 //              4878, 4879
 
 export function generateTreeTileMap(valueMap) {
-
   const tileMap = [];
 
   for (let y = 0; y < MAP_SIZE; y++) {
     tileMap[y] = [];
-    const start = (y % 2 === 0) ? 0 : 1;
-    for (let x = start; x < MAP_SIZE; x+=2) {   
-
+    const start = y % 2 === 0 ? 0 : 1;
+    for (let x = start; x < MAP_SIZE; x += 2) {
       const sum = sumNeighborValues(valueMap, x, y);
-      
+
       if (sum > 2) {
         if (y > 0 && x > 0) {
-          tileMap[y - 1][x - 1] = {sum, tile: tileMap[y - 1][x - 1].tile === 1250 ? 1282 : 1225};
+          tileMap[y - 1][x - 1] = { sum, tile: tileMap[y - 1][x - 1].tile === 1250 ? 1282 : 1225 };
         }
         if (y > 0 && x < MAP_SIZE - 1) {
-          tileMap[y - 1][x] = {sum, tile: tileMap[y - 1][x].tile === 1249 ? 1283 : 1226};
+          tileMap[y - 1][x] = { sum, tile: tileMap[y - 1][x].tile === 1249 ? 1283 : 1226 };
         }
         if (x > 0) {
-          tileMap[y][x - 1] = {sum, tile: 1249};
+          tileMap[y][x - 1] = { sum, tile: 1249 };
         }
         if (x < MAP_SIZE - 1) {
-          tileMap[y][x] = {sum, tile: 1250};
+          tileMap[y][x] = { sum, tile: 1250 };
         }
       } else {
         if (y > 0 && x > 0) {
-          tileMap[y -1 ][x - 1] = {sum, tile: tileMap[y -1 ][x - 1]?.tile || getGroundTile()};
+          tileMap[y - 1][x - 1] = { sum, tile: tileMap[y - 1][x - 1]?.tile || 0 };
         }
         if (y > 0 && x < MAP_SIZE - 1) {
-          tileMap[y - 1][x] = {sum, tile: tileMap[y - 1][x]?.tile || getGroundTile()};
+          tileMap[y - 1][x] = { sum, tile: tileMap[y - 1][x]?.tile || 0 };
         }
         if (x > 0) {
-          tileMap[y][x - 1] = {sum, tile: tileMap[y][x - 1]?.tile || getGroundTile()};
+          tileMap[y][x - 1] = { sum, tile: tileMap[y][x - 1]?.tile || 0 };
         }
         if (x < MAP_SIZE - 1) {
-          tileMap[y][x] = {sum, tile: tileMap[y][x]?.tile || getGroundTile()};
+          tileMap[y][x] = { sum, tile: tileMap[y][x]?.tile || 0 };
         }
       }
-
     }
   }
 
@@ -60,28 +58,28 @@ export function generateTreeTileMap(valueMap) {
 }
 
 const groundTiles = [
-  {index: 1, chance: 1},
-  {index: 2, chance: 0.5},
-  {index: 3, chance:0.1},
-  {index: 4, chance: 0.1},
-  {index: 24 + 1, chance: 0.1},
-  {index: 24 + 2, chance: 0.1},
-  {index: 24 + 3, chance: 0.1},
-  {index: 24 + 4, chance: 0.1},
-  {index: 48 + 1, chance: 0.1},
-  {index: 48 + 2, chance: 0.1},
-  {index: 48 + 3, chance: 0.01},
-  {index: 48 + 4, chance: 0.01},
-  {index: 72 + 1, chance: 0.01},
-  {index: 72 + 2, chance: 0.01},
-  {index: 72 + 3, chance: 0.01},
-  {index: 72 + 4, chance: 0.01},
-  {index: 96 + 1, chance: 0.01},
-  {index: 96 + 2, chance: 0.01},
-  {index: 96 + 3, chance: 0.01},
-  {index: 96 + 4, chance: 0.01},
+  { index: 1, chance: 1 },
+  { index: 2, chance: 0.5 },
+  { index: 3, chance: 0.1 },
+  { index: 4, chance: 0.1 },
+  { index: 24 + 1, chance: 0.1 },
+  { index: 24 + 2, chance: 0.1 },
+  { index: 24 + 3, chance: 0.1 },
+  { index: 24 + 4, chance: 0.1 },
+  { index: 48 + 1, chance: 0.1 },
+  { index: 48 + 2, chance: 0.1 },
+  { index: 48 + 3, chance: 0.01 },
+  { index: 48 + 4, chance: 0.01 },
+  { index: 72 + 1, chance: 0.01 },
+  { index: 72 + 2, chance: 0.01 },
+  { index: 72 + 3, chance: 0.01 },
+  { index: 72 + 4, chance: 0.01 },
+  { index: 96 + 1, chance: 0.01 },
+  { index: 96 + 2, chance: 0.01 },
+  { index: 96 + 3, chance: 0.01 },
+  { index: 96 + 4, chance: 0.01 },
 ];
-  
+
 function getGroundTile() {
   return groundTiles.reduce((selected, tile) => {
     if (Math.random() < tile.chance) {
@@ -91,16 +89,16 @@ function getGroundTile() {
   }, 1);
 }
 
-
 function sumNeighborValues(valueMap, x, y) {
-  let sum = 0,value = 0;
+  let sum = 0,
+    value = 0;
 
   // top-left
   if (y > 0 && x > 0) {
     value = valueMap[y - 1][x - 1].value;
     if (value !== 1) {
       sum++;
-    }        
+    }
   } else {
     sum++;
   }
@@ -136,20 +134,4 @@ function sumNeighborValues(valueMap, x, y) {
   }
 
   return sum;
-
-}
-
-
-
-function getTileSpritePosition(tileIndex) {
-  const tilesPerRow = 24;
-
-  tileIndex--;
-  const row = Math.floor(tileIndex / tilesPerRow);
-  const col = tileIndex % tilesPerRow;
-
-  return {
-    spriteX: col * 8,
-    spriteY: row * 8,
-  };
 }
