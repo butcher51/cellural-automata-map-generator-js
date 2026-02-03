@@ -32,7 +32,7 @@ let zoom = DEFAULT_ZOOM;
 const MIN_ZOOM = 1;
 const MAX_ZOOM = 8;
 
-// Track currently pressed keys
+// Track currently pressed keys.
 const keys = {
 };
 
