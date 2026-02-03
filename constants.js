@@ -7,14 +7,14 @@ export const BOX_SIZE = 8;
 export const MAP_SIZE = 100;
 
 // Scale factor for rendering (1 = normal, 2 = 2x zoom, etc.)
-export const ZOOM = 4;
+export const ZOOM = 3;
 
 // Pixels per frame for camera movement
 export const CAMERA_SPEED = 5;
 
 // Number of iterations for cave generation (increased for better formation)
 // Each iteration calculates neighbor counts and applies cave rules
-export const ITERATIONS = 1;
+export const ITERATIONS = 0;
 
 // Cave generation thresholds
 // Walls need 4+ wall neighbors to survive, floors need 5+ to become walls

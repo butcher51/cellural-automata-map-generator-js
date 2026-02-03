@@ -16,10 +16,10 @@ export function generateTreeTileMap(valueMap) {
       
       if (sum > 2) {
         if (y > 0 && x > 0) {
-          tileMap[y - 1][x - 1] = {sum, tile: 1225};
+          tileMap[y - 1][x - 1] = {sum, tile: tileMap[y - 1][x - 1].tile === 1250 ? 1282 : 1225};
         }
         if (y > 0 && x < MAP_SIZE - 1) {
-          tileMap[y - 1][x] = {sum, tile: 1226};
+          tileMap[y - 1][x] = {sum, tile: tileMap[y - 1][x].tile === 1249 ? 1283 : 1226};
         }
         if (x > 0) {
           tileMap[y][x - 1] = {sum, tile: 1249};
