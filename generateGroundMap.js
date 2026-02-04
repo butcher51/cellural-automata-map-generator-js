@@ -1,5 +1,6 @@
-import { MAP_SIZE } from "./constants.js";
+import { MAP_SIZE, SEED } from "./constants.js";
 import { getTileSpritePosition } from "./getTileSpritePosition.js";
+import { createRandom } from "./seed.js";
 
 export function generateGroundTileMap(valueMap) {
   const tileMap = [];
@@ -38,9 +39,11 @@ const groundTiles = [
   { index: 96 + 4, chance: 0.01 },
 ];
 
+const random = createRandom(SEED);
+
 function getGroundTile() {
   return groundTiles.reduce((selected, tile) => {
-    if (Math.random() < tile.chance) {
+    if (random() < tile.chance) {
       return tile.index;
     }
     return selected;

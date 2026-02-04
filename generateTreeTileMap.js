@@ -15,10 +15,16 @@ export function generateTreeTileMap(valueMap) {
 
       if (sum > 2) {
         if (y > 0 && x > 0) {
-          tileMap[y - 1][x - 1] = { sum, tile: tileMap[y - 1][x - 1].tile === 1250 ? 1282 : 1225 };
+          tileMap[y - 1][x - 1] = {
+            sum,
+            tile: tileMap[y - 1][x - 1].tile === 1250 ? 1282 : 1225,
+          };
         }
         if (y > 0 && x < MAP_SIZE - 1) {
-          tileMap[y - 1][x] = { sum, tile: tileMap[y - 1][x].tile === 1249 ? 1283 : 1226 };
+          tileMap[y - 1][x] = {
+            sum,
+            tile: tileMap[y - 1][x].tile === 1249 ? 1283 : 1226,
+          };
         }
         if (x > 0) {
           tileMap[y][x - 1] = { sum, tile: 1249 };
@@ -28,7 +34,10 @@ export function generateTreeTileMap(valueMap) {
         }
       } else {
         if (y > 0 && x > 0) {
-          tileMap[y - 1][x - 1] = { sum, tile: tileMap[y - 1][x - 1]?.tile || 0 };
+          tileMap[y - 1][x - 1] = {
+            sum,
+            tile: tileMap[y - 1][x - 1]?.tile || 0,
+          };
         }
         if (y > 0 && x < MAP_SIZE - 1) {
           tileMap[y - 1][x] = { sum, tile: tileMap[y - 1][x]?.tile || 0 };
@@ -49,44 +58,14 @@ export function generateTreeTileMap(valueMap) {
     }
     for (let x = 0; x < MAP_SIZE; x++) {
       if (tileMap[y][x]) {
-        tileMap[y][x].spritePosition = getTileSpritePosition(tileMap[y][x].tile);
+        tileMap[y][x].spritePosition = getTileSpritePosition(
+          tileMap[y][x].tile,
+        );
       }
     }
   }
 
   return tileMap;
-}
-
-const groundTiles = [
-  { index: 1, chance: 1 },
-  { index: 2, chance: 0.5 },
-  { index: 3, chance: 0.1 },
-  { index: 4, chance: 0.1 },
-  { index: 24 + 1, chance: 0.1 },
-  { index: 24 + 2, chance: 0.1 },
-  { index: 24 + 3, chance: 0.1 },
-  { index: 24 + 4, chance: 0.1 },
-  { index: 48 + 1, chance: 0.1 },
-  { index: 48 + 2, chance: 0.1 },
-  { index: 48 + 3, chance: 0.01 },
-  { index: 48 + 4, chance: 0.01 },
-  { index: 72 + 1, chance: 0.01 },
-  { index: 72 + 2, chance: 0.01 },
-  { index: 72 + 3, chance: 0.01 },
-  { index: 72 + 4, chance: 0.01 },
-  { index: 96 + 1, chance: 0.01 },
-  { index: 96 + 2, chance: 0.01 },
-  { index: 96 + 3, chance: 0.01 },
-  { index: 96 + 4, chance: 0.01 },
-];
-
-function getGroundTile() {
-  return groundTiles.reduce((selected, tile) => {
-    if (Math.random() < tile.chance) {
-      return tile.index;
-    }
-    return selected;
-  }, 1);
 }
 
 function sumNeighborValues(valueMap, x, y) {
