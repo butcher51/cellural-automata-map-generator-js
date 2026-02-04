@@ -2,7 +2,7 @@ import { MAP_SIZE, SEED } from "./constants.js";
 import { getTileSpritePosition } from "./getTileSpritePosition.js";
 import { createRandom } from "./seed.js";
 
-export function generateGroundTileMap(valueMap) {
+export function generateGroundTileMap() {
   const tileMap = [];
   let tile;
 

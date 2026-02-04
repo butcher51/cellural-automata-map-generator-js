@@ -1,7 +1,9 @@
 import { BACKGROUND_COLOR, BOX_SIZE, CAMERA_SPEED, ZOOM as DEFAULT_ZOOM, ITERATIONS, MAP_SIZE } from "./constants.js";
+import { generateDrawMap } from "./generateDrawMap.js";
 import { generateGroundTileMap } from "./generateGroundMap.js";
 import { generateTreeTileMap } from "./generateTreeTileMap.js";
 import { generateWaterTileMap } from "./generateWaterTileMap.js";
+import { generateWaterValueMap } from "./generateWaterValueMap.js";
 import { applyOrganicIterations, clampCamera, clearDrawingFlags, generateNoiseMap, getCellsInBrushArea, pixelToGridCoordinate, setCellValue, updateCamera } from "./map-utils.js";
 import { renderMap } from "./renderMap.js";
 import { initZoomPrevention } from "./zoomPrevention.js";
@@ -26,6 +28,43 @@ const keys = {};
 const canvas = document.getElementById("canvas");
 const ctx = canvas.getContext("2d");
 
+const toolbar = document.getElementById("toolbar");
+
+// Tool selection state
+let currentTool = "tree"; // "tree" or "eraser"
+
+// Tool button elements
+const treeToolButton = document.getElementById("tree-tool");
+const waterToolButton = document.getElementById("water-tool");
+const eraserToolButton = document.getElementById("eraser-tool");
+
+// Tool selection handlers
+treeToolButton.addEventListener("click", () => {
+  currentTool = "tree";
+  treeToolButton.classList.add("active");
+  waterToolButton.classList.remove("active");
+  eraserToolButton.classList.remove("active");
+});
+
+waterToolButton.addEventListener("click", () => {
+  currentTool = "water";
+  waterToolButton.classList.add("active");
+  treeToolButton.classList.remove("active");
+  eraserToolButton.classList.remove("active");
+});
+
+eraserToolButton.addEventListener("click", () => {
+  currentTool = "eraser";
+  eraserToolButton.classList.add("active");
+  waterToolButton.classList.remove("active");
+  treeToolButton.classList.remove("active");
+});
+
+// Helper function to get available canvas height
+function getCanvasHeight() {
+  return window.innerHeight - toolbar.offsetHeight;
+}
+
 // Disable image smoothing for crisp pixel art
 ctx.imageSmoothingEnabled = false;
 ctx.mozImageSmoothingEnabled = false;
@@ -33,7 +72,7 @@ ctx.webkitImageSmoothingEnabled = false;
 ctx.msImageSmoothingEnabled = false;
 
 canvas.width = window.innerWidth;
-canvas.height = window.innerHeight;
+canvas.height = getCanvasHeight();
 // Re-disable image smoothing (canvas resize resets this setting)
 ctx.imageSmoothingEnabled = false;
 ctx.mozImageSmoothingEnabled = false;
@@ -45,28 +84,23 @@ ctx.fillStyle = BACKGROUND_COLOR;
 ctx.fillRect(0, 0, canvas.width, canvas.height);
 
 // Initialize the map with organic cave patterns
-let valueMap, waterTileMap, groundTileMap, treeTileMap;
+let treeValueMap, waterValueMap, waterTileMap, groundTileMap, treeTileMap, drawMap;
 
-valueMap = applyOrganicIterations(generateNoiseMap(MAP_SIZE), ITERATIONS);
+drawMap = generateDrawMap();
 
-groundTileMap = generateGroundTileMap(valueMap);
+treeValueMap = applyOrganicIterations(generateNoiseMap(MAP_SIZE), ITERATIONS);
 
-waterTileMap = generateWaterTileMap(valueMap);
+groundTileMap = generateGroundTileMap();
 
-treeTileMap = generateTreeTileMap(valueMap);
+waterValueMap = generateWaterValueMap();
 
-// generateMap();
+waterTileMap = generateWaterTileMap(waterValueMap);
 
-function generateMap() {
-  //   valueMap = applyOrganicIterations(valueMap, ITERATIONS);
-  //   groundTileMap = generateGroundTileMap(valueMap);
-  //   treeTileMap = generateTreeTileMap(valueMap);
-}
+treeTileMap = generateTreeTileMap(treeValueMap);
 
 // State for drag-to-paint interaction
 let isDrawing = false;
 let paintedCellsInStroke = new Set();
-let paintTargetValue = null; // null when not painting, 0 or 1 during stroke
 
 // Load number sprite sheet (100x10 PNG: nine 10x10 digits 0-8)
 const numberSprite = new Image();
@@ -95,7 +129,7 @@ Promise.allSettled([
 // Handle window resize
 window.addEventListener("resize", () => {
   canvas.width = window.innerWidth;
-  canvas.height = window.innerHeight;
+  canvas.height = getCanvasHeight();
   // Re-disable image smoothing (canvas resize resets this setting)
   ctx.imageSmoothingEnabled = false;
   ctx.fillStyle = BACKGROUND_COLOR;
@@ -120,11 +154,6 @@ window.addEventListener("keyup", (e) => {
 
 // Helper function to paint cells during drag with 2x2 brush
 function paintCellAtPosition(event) {
-  // Safety: ensure we have a target value
-  if (paintTargetValue === null) {
-    return;
-  }
-
   // Get click coordinates relative to canvas
   const rect = canvas.getBoundingClientRect();
   const pixelX = event.clientX - rect.left;
@@ -150,7 +179,15 @@ function paintCellAtPosition(event) {
   for (const cell of cellsToPaint) {
     const cellKey = `${cell.x},${cell.y}`;
     if (!paintedCellsInStroke.has(cellKey)) {
-      valueMap = setCellValue(valueMap, cell.x, cell.y, paintTargetValue);
+      drawMap[cell.y][cell.x] = true;
+      if (currentTool === "tree") {
+        treeValueMap = setCellValue(treeValueMap, cell.x, cell.y, 0);
+      } else if (currentTool === "water") {
+        waterValueMap = setCellValue(waterValueMap, cell.x, cell.y, 1);
+      } else if (currentTool === "eraser") {
+        treeValueMap = setCellValue(treeValueMap, cell.x, cell.y, 1);
+        waterValueMap = setCellValue(waterValueMap, cell.x, cell.y, 0);
+      }
       paintedCellsInStroke.add(cellKey);
     }
   }
@@ -158,11 +195,13 @@ function paintCellAtPosition(event) {
 
 // Handle mouse down to start painting
 function handleMouseDown(event) {
+  // Only respond to left click
+  if (event.button !== 0) {
+    return;
+  }
+
   isDrawing = true;
   paintedCellsInStroke = new Set();
-
-  // Left click (button 0) = draw (1), Right click (button 2) = erase (0)
-  paintTargetValue = event.button === 2 ? 0 : 1;
 
   // Paint the initial cells with brush
   paintCellAtPosition(event);
@@ -179,21 +218,23 @@ function handleMouseMove(event) {
 }
 
 // Handle mouse up to finish painting and rerun iterations
-function handleMouseUp(event) {
+function handleMouseUp() {
   if (!isDrawing) {
     return;
   }
 
   isDrawing = false;
   paintedCellsInStroke = new Set();
-  paintTargetValue = null; // Clear target value
 
   // NOW rerun cellular automaton iterations (clears isBeingDrawn flags)
   //generateMap();
-  valueMap = applyOrganicIterations(valueMap, ITERATIONS);
+  treeValueMap = applyOrganicIterations(treeValueMap, ITERATIONS);
 
-  treeTileMap = generateTreeTileMap(valueMap);
-  clearDrawingFlags(valueMap);
+  treeTileMap = generateTreeTileMap(treeValueMap);
+
+  waterTileMap = generateWaterTileMap(waterValueMap);
+
+  clearDrawingFlags(drawMap);
 }
 
 // Block browser context menu on canvas (for right-click erase)
@@ -224,7 +265,7 @@ function animate() {
   ctx.fillRect(0, 0, canvas.width, canvas.height);
 
   // Render the map with sprite, camera offset, and zoom
-  renderMap(valueMap, treeTileMap, groundTileMap, ctx, BOX_SIZE, numberSprite, tileMapSprite, camera, zoom);
+  renderMap(treeValueMap, treeTileMap, groundTileMap, waterTileMap, drawMap, ctx, BOX_SIZE, numberSprite, tileMapSprite, camera, zoom);
 
   requestAnimationFrame(animate);
 }

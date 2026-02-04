@@ -1,9 +1,5 @@
 // Pure utility functions for map generation
-import {
-  FLOOR_TO_WALL_THRESHOLD,
-  SEED,
-  WALL_SURVIVAL_THRESHOLD,
-} from "./constants.js";
+import { FLOOR_TO_WALL_THRESHOLD, SEED, WALL_SURVIVAL_THRESHOLD } from "./constants.js";
 import { createRandom } from "./seed.js";
 
 // Create a deep copy of a 2D map array
@@ -98,7 +94,6 @@ export function setCellValue(map, x, y, value) {
 
   // Set the value and mark as being drawn
   newMap[y][x].value = value;
-  newMap[y][x].isBeingDrawn = true;
 
   return newMap;
 }
@@ -115,19 +110,16 @@ export function applyOrganicIterations(map, iterations) {
     applyCaveRules(currentMap);
   }
 
-  // Clear all drawing flags
-  clearDrawingFlags(map);
-
   // Final friend count calculation for rendering
   calculateAllFriendCounts(currentMap);
 
   return currentMap;
 }
 
-export function clearDrawingFlags(map) {
-  for (let y = 0; y < map.length; y++) {
-    for (let x = 0; x < map[y].length; x++) {
-      map[y][x].isBeingDrawn = false;
+export function clearDrawingFlags(drawMap) {
+  for (let y = 0; y < drawMap.length; y++) {
+    for (let x = 0; x < drawMap[y].length; x++) {
+      drawMap[y][x] = false;
     }
   }
 }
@@ -143,7 +135,6 @@ export function generateNoiseMap(size) {
     for (let x = 0; x < size; x++) {
       map[y][x] = {
         value: Math.floor(random() * 2),
-        isBeingDrawn: false,
       };
     }
   }
@@ -169,31 +160,6 @@ export function getCellColor(cell) {
   } else {
     return "#00aa00"; // Green
   }
-}
-
-// Get the color for a cell based on drawing state and friend count
-// When isBeingDrawn is true: returns simple black/white based on value
-// When isBeingDrawn is false: returns red/green based on friendCount (neighbor density)
-export function getCellColorWithDrawingState(cell) {
-  // Handle invalid cells
-  if (!cell || typeof cell !== "object") {
-    return "#000000";
-  }
-
-  // If cell is being drawn, show simple black/white colors
-  if (cell.isBeingDrawn === true) {
-    return cell.value === 0 ? "#000000" : "#ffffff";
-  }
-
-  // Otherwise, use neighbor-based colors (defaults to this if isBeingDrawn is missing/false)
-  // Handle missing friendCount
-  if (cell.friendCount === undefined) {
-    return "#000000";
-  }
-
-  // Red (sparse): friendCount < 4
-  // Green (dense): friendCount >= 4
-  return cell.value !== 1 ? "#aa0000" : "#00aa00";
 }
 
 // Count the number of neighboring cells with value 1 for a single cell
@@ -230,12 +196,7 @@ export function countNeighborFriends(map, x, y) {
     const neighborX = x + dx;
 
     // Check bounds
-    if (
-      neighborY >= 0 &&
-      neighborY < map.length &&
-      neighborX >= 0 &&
-      neighborX < map[neighborY].length
-    ) {
+    if (neighborY >= 0 && neighborY < map.length && neighborX >= 0 && neighborX < map[neighborY].length) {
       const neighbor = map[neighborY][neighborX];
       if (neighbor && neighbor.value === 1) {
         count++;
@@ -275,8 +236,7 @@ export function applyCaveRules(map) {
       const cell = map[y][x];
       if (cell && cell.friendCount !== undefined) {
         // Apply different threshold based on current cell state
-        const threshold =
-          cell.value === 1 ? WALL_SURVIVAL_THRESHOLD : FLOOR_TO_WALL_THRESHOLD;
+        const threshold = cell.value === 1 ? WALL_SURVIVAL_THRESHOLD : FLOOR_TO_WALL_THRESHOLD;
 
         cell.value = cell.friendCount >= threshold ? 1 : 0;
       }
@@ -319,14 +279,7 @@ export function updateCamera(camera, keys, speed, zoom) {
 
 // Clamp camera to map boundaries
 // Returns clamped camera position { x, y }
-export function clampCamera(
-  camera,
-  mapSize,
-  boxSize,
-  zoom,
-  viewportWidth,
-  viewportHeight,
-) {
+export function clampCamera(camera, mapSize, boxSize, zoom, viewportWidth, viewportHeight) {
   const worldWidth = mapSize * boxSize * zoom;
   const worldHeight = mapSize * boxSize * zoom;
 

@@ -1,8 +1,7 @@
 import { MAP_SIZE } from "./constants.js";
-import { getCellColorWithDrawingState } from "./map-utils.js";
 
 // Render the map with colors based on cell objects and sprite numbers
-export function renderMap(valueMap, treeMap, groundTileMap, ctx, boxSize, numberSprite, tileMapSprite, cameraOffset, zoom) {
+export function renderMap(valueMap, treeTileMap, groundTileMap, waterTileMap, drawMap, ctx, boxSize, numberSprite, tileMapSprite, cameraOffset, zoom) {
   const scaledSize = boxSize * zoom;
 
   for (let y = 0; y < MAP_SIZE; y++) {
@@ -20,10 +19,16 @@ export function renderMap(valueMap, treeMap, groundTileMap, ctx, boxSize, number
         const tile = groundTileMap[y][x];
         let { spriteX, spriteY } = tile.spritePosition;
 
-        const treeTile = treeMap[y][x];
+        const treeTile = treeTileMap[y][x];
         if (treeTile && treeTile.tile !== 0) {
           spriteX = treeTile.spritePosition.spriteX;
           spriteY = treeTile.spritePosition.spriteY;
+        }
+
+        const waterTile = waterTileMap[y][x];
+        if (waterTile && waterTile.tile !== 0) {
+          spriteX = waterTile.spritePosition.spriteX;
+          spriteY = waterTile.spritePosition.spriteY;
         }
 
         ctx.drawImage(
@@ -60,9 +65,8 @@ export function renderMap(valueMap, treeMap, groundTileMap, ctx, boxSize, number
         // }
       }
 
-      if (cell.isBeingDrawn) {
-        // Draw background (uses drawing state for temporary colors)
-        ctx.fillStyle = getCellColorWithDrawingState(cell);
+      if (drawMap[y][x]) {
+        ctx.fillStyle = "#000000";
         ctx.fillRect(cellX, cellY, scaledSize, scaledSize);
       }
     }
