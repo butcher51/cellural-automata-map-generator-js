@@ -235,6 +235,51 @@ function handleMouseUp() {
   clearDrawingFlags(drawMap);
 }
 
+// Handle touch start to begin painting
+function handleTouchStart(event) {
+  event.preventDefault(); // Prevent scrolling while drawing
+  if (event.touches.length !== 1) return; // Single touch only
+
+  isDrawing = true;
+  paintedCellsInStroke = new Set();
+
+  paintCellAtPosition({
+    canvas,
+    currentTool,
+    event: event.touches[0], // Pass touch point (has clientX/clientY)
+    drawMap,
+    treeValueMap,
+    waterValueMap,
+    camera,
+    zoom,
+    paintedCellsInStroke,
+  });
+}
+
+// Handle touch move to continue painting
+function handleTouchMove(event) {
+  event.preventDefault();
+  if (!isDrawing || event.touches.length !== 1) return;
+
+  paintCellAtPosition({
+    canvas,
+    currentTool,
+    event: event.touches[0],
+    drawMap,
+    treeValueMap,
+    waterValueMap,
+    camera,
+    zoom,
+    paintedCellsInStroke,
+  });
+}
+
+// Handle touch end to finish painting
+function handleTouchEnd(event) {
+  event.preventDefault();
+  handleMouseUp(); // Reuse existing mouseup logic
+}
+
 // Block browser context menu on canvas (for right-click erase)
 canvas.addEventListener("contextmenu", (e) => e.preventDefault());
 
@@ -245,6 +290,12 @@ canvas.addEventListener("mouseup", handleMouseUp);
 
 // Also handle mouse leaving canvas
 canvas.addEventListener("mouseleave", handleMouseUp);
+
+// Attach touch event listeners for touch-to-paint
+canvas.addEventListener("touchstart", handleTouchStart, { passive: false });
+canvas.addEventListener("touchmove", handleTouchMove, { passive: false });
+canvas.addEventListener("touchend", handleTouchEnd);
+canvas.addEventListener("touchcancel", handleTouchEnd);
 
 // Animation loop
 function animate() {
