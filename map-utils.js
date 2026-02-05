@@ -1,5 +1,9 @@
 // Pure utility functions for map generation
-import { FLOOR_TO_WALL_THRESHOLD, SEED, WALL_SURVIVAL_THRESHOLD } from "./constants.js";
+import {
+  FLOOR_TO_WALL_THRESHOLD,
+  SEED,
+  WALL_SURVIVAL_THRESHOLD,
+} from "./constants.js";
 import { createRandom } from "./seed.js";
 
 // Create a deep copy of a 2D map array
@@ -89,13 +93,9 @@ export function setCellValue(map, x, y, value) {
     return map;
   }
 
-  // Deep copy the map
-  const newMap = deepCopyMap(map);
+  map[y][x].value = value;
 
-  // Set the value and mark as being drawn
-  newMap[y][x].value = value;
-
-  return newMap;
+  return map;
 }
 
 // Apply N iterations of cellular automaton to existing map
@@ -196,7 +196,12 @@ export function countNeighborFriends(map, x, y) {
     const neighborX = x + dx;
 
     // Check bounds
-    if (neighborY >= 0 && neighborY < map.length && neighborX >= 0 && neighborX < map[neighborY].length) {
+    if (
+      neighborY >= 0 &&
+      neighborY < map.length &&
+      neighborX >= 0 &&
+      neighborX < map[neighborY].length
+    ) {
       const neighbor = map[neighborY][neighborX];
       if (neighbor && neighbor.value === 1) {
         count++;
@@ -236,7 +241,8 @@ export function applyCaveRules(map) {
       const cell = map[y][x];
       if (cell && cell.friendCount !== undefined) {
         // Apply different threshold based on current cell state
-        const threshold = cell.value === 1 ? WALL_SURVIVAL_THRESHOLD : FLOOR_TO_WALL_THRESHOLD;
+        const threshold =
+          cell.value === 1 ? WALL_SURVIVAL_THRESHOLD : FLOOR_TO_WALL_THRESHOLD;
 
         cell.value = cell.friendCount >= threshold ? 1 : 0;
       }
@@ -277,9 +283,52 @@ export function updateCamera(camera, keys, speed, zoom) {
   return { x, y };
 }
 
+// Check if an island cell is a border cell (has at least one non-island cardinal neighbor or is at map edge)
+// Returns true for border cells, false for interior cells
+// Uses 4-neighbor (cardinal) check: up, down, left, right
+export function isIslandBorderCell(valueMap, x, y) {
+  const height = valueMap.length;
+  const width = valueMap[0]?.length || 0;
+
+  // Check if cell is at map edge (edges count as non-island)
+  if (x === 0 || x === width - 1 || y === 0 || y === height - 1) {
+    return true;
+  }
+
+  // Cardinal directions: up, down, left, right
+  const cardinalNeighbors = [
+    { dx: 0, dy: -1 }, // up
+    { dx: 0, dy: 1 }, // down
+    { dx: -1, dy: 0 }, // left
+    { dx: 1, dy: 0 }, // right
+  ];
+
+  // Check each cardinal neighbor
+  for (const { dx, dy } of cardinalNeighbors) {
+    const neighborX = x + dx;
+    const neighborY = y + dy;
+    const neighbor = valueMap[neighborY]?.[neighborX];
+
+    // If neighbor is non-island (value !== 1), this is a border cell
+    if (!neighbor || neighbor.value !== 1) {
+      return true;
+    }
+  }
+
+  // All cardinal neighbors are island cells, so this is an interior cell
+  return false;
+}
+
 // Clamp camera to map boundaries
 // Returns clamped camera position { x, y }
-export function clampCamera(camera, mapSize, boxSize, zoom, viewportWidth, viewportHeight) {
+export function clampCamera(
+  camera,
+  mapSize,
+  boxSize,
+  zoom,
+  viewportWidth,
+  viewportHeight,
+) {
   const worldWidth = mapSize * boxSize * zoom;
   const worldHeight = mapSize * boxSize * zoom;
 

@@ -1,10 +1,24 @@
-import { BACKGROUND_COLOR, BOX_SIZE, CAMERA_SPEED, ZOOM as DEFAULT_ZOOM, ITERATIONS, MAP_SIZE } from "./constants.js";
+import {
+  BACKGROUND_COLOR,
+  BOX_SIZE,
+  CAMERA_SPEED,
+  ZOOM as DEFAULT_ZOOM,
+  ITERATIONS,
+  MAP_SIZE,
+} from "./constants.js";
 import { generateDrawMap } from "./generateDrawMap.js";
 import { generateGroundTileMap } from "./generateGroundMap.js";
 import { generateTreeTileMap } from "./generateTreeTileMap.js";
 import { generateWaterTileMap } from "./generateWaterTileMap.js";
 import { generateWaterValueMap } from "./generateWaterValueMap.js";
-import { applyOrganicIterations, clampCamera, clearDrawingFlags, generateNoiseMap, getCellsInBrushArea, pixelToGridCoordinate, setCellValue, updateCamera } from "./map-utils.js";
+import {
+  applyOrganicIterations,
+  clampCamera,
+  clearDrawingFlags,
+  generateNoiseMap,
+  updateCamera,
+} from "./map-utils.js";
+import { paintCellAtPosition } from "./paintCellAtPosition.js";
 import { renderMap } from "./renderMap.js";
 import { initZoomPrevention } from "./zoomPrevention.js";
 
@@ -84,7 +98,12 @@ ctx.fillStyle = BACKGROUND_COLOR;
 ctx.fillRect(0, 0, canvas.width, canvas.height);
 
 // Initialize the map with organic cave patterns
-let treeValueMap, waterValueMap, waterTileMap, groundTileMap, treeTileMap, drawMap;
+let treeValueMap,
+  waterValueMap,
+  waterTileMap,
+  groundTileMap,
+  treeTileMap,
+  drawMap;
 
 drawMap = generateDrawMap();
 
@@ -152,47 +171,6 @@ window.addEventListener("keyup", (e) => {
   keys[e.key] = false;
 });
 
-// Helper function to paint cells during drag with 2x2 brush
-function paintCellAtPosition(event) {
-  // Get click coordinates relative to canvas
-  const rect = canvas.getBoundingClientRect();
-  const pixelX = event.clientX - rect.left;
-  const pixelY = event.clientY - rect.top;
-
-  // Convert screen pixel to world pixel (add camera offset)
-  const worldPixelX = pixelX + camera.x;
-  const worldPixelY = pixelY + camera.y;
-
-  // Convert to grid coordinates (center of brush) using scaled box size
-  const { x, y } = pixelToGridCoordinate(worldPixelX, worldPixelY, BOX_SIZE * zoom);
-
-  // Validate center cell bounds
-  if (x < 0 || x >= MAP_SIZE || y < 0 || y >= MAP_SIZE) {
-    return;
-  }
-
-  // Get all cells in 2x2 brush area
-  const brushSize = 2;
-  const cellsToPaint = getCellsInBrushArea(x, y, brushSize, MAP_SIZE);
-
-  // Paint each cell (avoid redundant sets within a single stroke)
-  for (const cell of cellsToPaint) {
-    const cellKey = `${cell.x},${cell.y}`;
-    if (!paintedCellsInStroke.has(cellKey)) {
-      drawMap[cell.y][cell.x] = true;
-      if (currentTool === "tree") {
-        treeValueMap = setCellValue(treeValueMap, cell.x, cell.y, 0);
-      } else if (currentTool === "water") {
-        waterValueMap = setCellValue(waterValueMap, cell.x, cell.y, 1);
-      } else if (currentTool === "eraser") {
-        treeValueMap = setCellValue(treeValueMap, cell.x, cell.y, 1);
-        waterValueMap = setCellValue(waterValueMap, cell.x, cell.y, 0);
-      }
-      paintedCellsInStroke.add(cellKey);
-    }
-  }
-}
-
 // Handle mouse down to start painting
 function handleMouseDown(event) {
   // Only respond to left click
@@ -204,7 +182,17 @@ function handleMouseDown(event) {
   paintedCellsInStroke = new Set();
 
   // Paint the initial cells with brush
-  paintCellAtPosition(event);
+  paintCellAtPosition({
+    canvas,
+    currentTool,
+    event,
+    drawMap,
+    treeValueMap,
+    waterValueMap,
+    camera,
+    zoom,
+    paintedCellsInStroke,
+  });
 }
 
 // Handle mouse move to continue painting
@@ -213,8 +201,18 @@ function handleMouseMove(event) {
     return;
   }
 
-  // Continue painting while dragging
-  paintCellAtPosition(event);
+  // Paint the initial cells with brush
+  paintCellAtPosition({
+    canvas,
+    currentTool,
+    event,
+    drawMap,
+    treeValueMap,
+    waterValueMap,
+    camera,
+    zoom,
+    paintedCellsInStroke,
+  });
 }
 
 // Handle mouse up to finish painting and rerun iterations
@@ -258,14 +256,33 @@ function animate() {
   camera = updateCamera(camera, keys, CAMERA_SPEED, zoom);
 
   // Clamp camera to map boundaries
-  camera = clampCamera(camera, MAP_SIZE, BOX_SIZE, zoom, canvas.width, canvas.height);
+  camera = clampCamera(
+    camera,
+    MAP_SIZE,
+    BOX_SIZE,
+    zoom,
+    canvas.width,
+    canvas.height,
+  );
 
   // Clear canvas with background color
   ctx.fillStyle = BACKGROUND_COLOR;
   ctx.fillRect(0, 0, canvas.width, canvas.height);
 
   // Render the map with sprite, camera offset, and zoom
-  renderMap(treeValueMap, treeTileMap, groundTileMap, waterTileMap, drawMap, ctx, BOX_SIZE, numberSprite, tileMapSprite, camera, zoom);
+  renderMap(
+    treeValueMap,
+    treeTileMap,
+    groundTileMap,
+    waterTileMap,
+    drawMap,
+    ctx,
+    BOX_SIZE,
+    numberSprite,
+    tileMapSprite,
+    camera,
+    zoom,
+  );
 
   requestAnimationFrame(animate);
 }

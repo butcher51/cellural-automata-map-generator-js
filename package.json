@@ -8,7 +8,9 @@
     "start": "node server.js",
     "dev": "node server.js",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix"
   },
   "keywords": [
     "map",
@@ -22,6 +24,7 @@
   "devDependencies": {
     "@eslint/js": "^9.39.2",
     "eslint": "^9.39.2",
+    "eslint-plugin-import": "^2.32.0",
     "globals": "^17.3.0",
     "vitest": "^4.0.17"
   }
