@@ -48,8 +48,10 @@ export function paintCellAtPosition({
       drawMap[cell.y][cell.x] = true;
       if (currentTool === "tree") {
         treeValueMap = setCellValue(treeValueMap, cell.x, cell.y, 0);
+        waterValueMap = setCellValue(waterValueMap, cell.x, cell.y, 0);
       } else if (currentTool === "water") {
         waterValueMap = setCellValue(waterValueMap, cell.x, cell.y, 1);
+        treeValueMap = setCellValue(treeValueMap, cell.x, cell.y, 1);
       } else if (currentTool === "eraser") {
         treeValueMap = setCellValue(treeValueMap, cell.x, cell.y, 1);
         waterValueMap = setCellValue(waterValueMap, cell.x, cell.y, 0);
