@@ -121,6 +121,11 @@ treeTileMap = generateTreeTileMap(treeValueMap);
 let isDrawing = false;
 let paintedCellsInStroke = new Set();
 
+// State for two-finger gestures (pinch zoom and pan)
+let initialPinchDistance = null;
+let lastTouchMidpoint = null;
+let initialZoom = null;
+
 // Load number sprite sheet (100x10 PNG: nine 10x10 digits 0-8)
 const numberSprite = new Image();
 numberSprite.src = "./assets/numbers.png";
@@ -235,30 +240,79 @@ function handleMouseUp() {
   clearDrawingFlags(drawMap);
 }
 
+// Calculate distance between two touch points
+function getTouchDistance(touch1, touch2) {
+  const dx = touch2.clientX - touch1.clientX;
+  const dy = touch2.clientY - touch1.clientY;
+  return Math.sqrt(dx * dx + dy * dy);
+}
+
+// Calculate midpoint between two touch points
+function getTouchMidpoint(touch1, touch2) {
+  return {
+    x: (touch1.clientX + touch2.clientX) / 2,
+    y: (touch1.clientY + touch2.clientY) / 2,
+  };
+}
+
 // Handle touch start to begin painting
 function handleTouchStart(event) {
   event.preventDefault(); // Prevent scrolling while drawing
-  if (event.touches.length !== 1) return; // Single touch only
 
-  isDrawing = true;
-  paintedCellsInStroke = new Set();
+  if (event.touches.length === 2) {
+    // Two fingers: start pinch zoom / pan gesture
+    isDrawing = false; // Cancel any drawing
+    initialPinchDistance = getTouchDistance(event.touches[0], event.touches[1]);
+    lastTouchMidpoint = getTouchMidpoint(event.touches[0], event.touches[1]);
+    initialZoom = zoom;
+    return;
+  }
 
-  paintCellAtPosition({
-    canvas,
-    currentTool,
-    event: event.touches[0], // Pass touch point (has clientX/clientY)
-    drawMap,
-    treeValueMap,
-    waterValueMap,
-    camera,
-    zoom,
-    paintedCellsInStroke,
-  });
+  if (event.touches.length === 1) {
+    // Single finger: start drawing
+    isDrawing = true;
+    paintedCellsInStroke = new Set();
+
+    paintCellAtPosition({
+      canvas,
+      currentTool,
+      event: event.touches[0], // Pass touch point (has clientX/clientY)
+      drawMap,
+      treeValueMap,
+      waterValueMap,
+      camera,
+      zoom,
+      paintedCellsInStroke,
+    });
+  }
 }
 
 // Handle touch move to continue painting
 function handleTouchMove(event) {
   event.preventDefault();
+
+  if (event.touches.length === 2 && initialPinchDistance !== null) {
+    // Two fingers: handle pinch zoom and pan
+    const currentDistance = getTouchDistance(event.touches[0], event.touches[1]);
+    const currentMidpoint = getTouchMidpoint(event.touches[0], event.touches[1]);
+
+    // Calculate zoom based on pinch ratio
+    const pinchRatio = currentDistance / initialPinchDistance;
+    const newZoom = Math.round(initialZoom * pinchRatio);
+    zoom = Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, newZoom));
+
+    // Calculate pan based on midpoint movement
+    if (lastTouchMidpoint) {
+      const dx = currentMidpoint.x - lastTouchMidpoint.x;
+      const dy = currentMidpoint.y - lastTouchMidpoint.y;
+      camera.x -= dx / zoom;
+      camera.y -= dy / zoom;
+    }
+    lastTouchMidpoint = currentMidpoint;
+    return;
+  }
+
+  // Single finger drawing
   if (!isDrawing || event.touches.length !== 1) return;
 
   paintCellAtPosition({
@@ -277,7 +331,18 @@ function handleTouchMove(event) {
 // Handle touch end to finish painting
 function handleTouchEnd(event) {
   event.preventDefault();
-  handleMouseUp(); // Reuse existing mouseup logic
+
+  // Reset two-finger gesture state when fingers lift
+  if (event.touches.length < 2) {
+    initialPinchDistance = null;
+    lastTouchMidpoint = null;
+    initialZoom = null;
+  }
+
+  // If no more touches, finish any drawing stroke
+  if (event.touches.length === 0) {
+    handleMouseUp();
+  }
 }
 
 // Block browser context menu on canvas (for right-click erase)
