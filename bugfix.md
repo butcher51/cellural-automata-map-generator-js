@@ -1,0 +1,3 @@
+- touch zoom in out doesn't work on ios chrome
+- double touch move looks half the distance that it should
+- canvas size doesn't fill the height properly

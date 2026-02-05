@@ -1,23 +1,10 @@
-import {
-  BACKGROUND_COLOR,
-  BOX_SIZE,
-  CAMERA_SPEED,
-  ZOOM as DEFAULT_ZOOM,
-  ITERATIONS,
-  MAP_SIZE,
-} from "./constants.js";
+import { BACKGROUND_COLOR, BOX_SIZE, CAMERA_SPEED, ZOOM as DEFAULT_ZOOM, ITERATIONS, MAP_SIZE } from "./constants.js";
 import { generateDrawMap } from "./generateDrawMap.js";
 import { generateGroundTileMap } from "./generateGroundMap.js";
 import { generateTreeTileMap } from "./generateTreeTileMap.js";
 import { generateWaterTileMap } from "./generateWaterTileMap.js";
 import { generateWaterValueMap } from "./generateWaterValueMap.js";
-import {
-  applyOrganicIterations,
-  clampCamera,
-  clearDrawingFlags,
-  generateNoiseMap,
-  updateCamera,
-} from "./map-utils.js";
+import { applyOrganicIterations, clampCamera, clearDrawingFlags, generateNoiseMap, updateCamera } from "./map-utils.js";
 import { paintCellAtPosition } from "./paintCellAtPosition.js";
 import { renderMap } from "./renderMap.js";
 import { initZoomPrevention } from "./zoomPrevention.js";
@@ -98,12 +85,7 @@ ctx.fillStyle = BACKGROUND_COLOR;
 ctx.fillRect(0, 0, canvas.width, canvas.height);
 
 // Initialize the map with organic cave patterns
-let treeValueMap,
-  waterValueMap,
-  waterTileMap,
-  groundTileMap,
-  treeTileMap,
-  drawMap;
+let treeValueMap, waterValueMap, waterTileMap, groundTileMap, treeTileMap, drawMap;
 
 drawMap = generateDrawMap();
 
@@ -372,33 +354,14 @@ function animate() {
   camera = updateCamera(camera, keys, CAMERA_SPEED, zoom);
 
   // Clamp camera to map boundaries
-  camera = clampCamera(
-    camera,
-    MAP_SIZE,
-    BOX_SIZE,
-    zoom,
-    canvas.width,
-    canvas.height,
-  );
+  camera = clampCamera(camera, MAP_SIZE, BOX_SIZE, zoom, canvas.width, canvas.height);
 
   // Clear canvas with background color
   ctx.fillStyle = BACKGROUND_COLOR;
   ctx.fillRect(0, 0, canvas.width, canvas.height);
 
   // Render the map with sprite, camera offset, and zoom
-  renderMap(
-    treeValueMap,
-    treeTileMap,
-    groundTileMap,
-    waterTileMap,
-    drawMap,
-    ctx,
-    BOX_SIZE,
-    numberSprite,
-    tileMapSprite,
-    camera,
-    zoom,
-  );
+  renderMap(treeValueMap, treeTileMap, groundTileMap, waterTileMap, drawMap, ctx, BOX_SIZE, numberSprite, tileMapSprite, camera, zoom);
 
   requestAnimationFrame(animate);
 }
