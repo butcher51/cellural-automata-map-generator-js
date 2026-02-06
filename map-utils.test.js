@@ -1,5 +1,40 @@
 import { describe, it, expect } from "vitest";
-import { isIslandBorderCell } from "./map-utils.js";
+import { clearDrawingFlags, isIslandBorderCell } from "./map-utils.js";
+
+describe("clearDrawingFlags", () => {
+  it("clears all true values in drawMap to false", () => {
+    const drawMap = [
+      [true, false, true],
+      [false, true, false],
+      [true, true, true],
+    ];
+    clearDrawingFlags(drawMap);
+    for (let y = 0; y < drawMap.length; y++) {
+      for (let x = 0; x < drawMap[y].length; x++) {
+        expect(drawMap[y][x]).toBe(false);
+      }
+    }
+  });
+
+  it("handles already-cleared drawMap", () => {
+    const drawMap = [
+      [false, false, false],
+      [false, false, false],
+    ];
+    clearDrawingFlags(drawMap);
+    for (let y = 0; y < drawMap.length; y++) {
+      for (let x = 0; x < drawMap[y].length; x++) {
+        expect(drawMap[y][x]).toBe(false);
+      }
+    }
+  });
+
+  it("handles empty drawMap", () => {
+    const drawMap = [];
+    expect(() => clearDrawingFlags(drawMap)).not.toThrow();
+    expect(drawMap.length).toBe(0);
+  });
+});
 
 // Helper to create a simple value map with given dimensions and values
 function createValueMap(values) {

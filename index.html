@@ -14,7 +14,8 @@
             overflow: hidden;
             display: flex;
             flex-direction: column;
-            height: 100vh;
+            height: 100vh; /* Fallback for older browsers */
+            height: 100dvh; /* Dynamic viewport height for mobile */
             background-color: #1a1a1a;
         }
         #toolbar {

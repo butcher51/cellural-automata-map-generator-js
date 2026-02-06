@@ -63,7 +63,10 @@ eraserToolButton.addEventListener("click", () => {
 
 // Helper function to get available canvas height
 function getCanvasHeight() {
-  return window.innerHeight - toolbar.offsetHeight;
+  const viewportHeight = window.visualViewport
+    ? window.visualViewport.height
+    : window.innerHeight;
+  return viewportHeight - toolbar.offsetHeight;
 }
 
 // Disable image smoothing for crisp pixel art
@@ -141,6 +144,17 @@ window.addEventListener("resize", () => {
   ctx.fillStyle = BACKGROUND_COLOR;
   ctx.fillRect(0, 0, canvas.width, canvas.height);
 });
+
+// Handle mobile viewport resize (e.g., when address bar hides/shows)
+if (window.visualViewport) {
+  window.visualViewport.addEventListener("resize", () => {
+    canvas.width = window.innerWidth;
+    canvas.height = getCanvasHeight();
+    ctx.imageSmoothingEnabled = false;
+    ctx.fillStyle = BACKGROUND_COLOR;
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+  });
+}
 
 // Keyboard event listeners for camera movement and zoom
 window.addEventListener("keydown", (e) => {
@@ -244,6 +258,7 @@ function handleTouchStart(event) {
   if (event.touches.length === 2) {
     // Two fingers: start pinch zoom / pan gesture
     isDrawing = false; // Cancel any drawing
+    clearDrawingFlags(drawMap); // Clear any partially drawn cells to prevent black boxes
     initialPinchDistance = getTouchDistance(event.touches[0], event.touches[1]);
     lastTouchMidpoint = getTouchMidpoint(event.touches[0], event.touches[1]);
     initialZoom = zoom;
