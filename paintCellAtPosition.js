@@ -1,6 +1,7 @@
 import { BOX_SIZE, MAP_SIZE } from "./constants.js";
 import {
   getCellsInBrushArea,
+  getCellsInBrushAreaWithBorder,
   pixelToGridCoordinate,
   setCellValue,
 } from "./map-utils.js";
@@ -59,4 +60,21 @@ export function paintCellAtPosition({
       paintedCellsInStroke.add(cellKey);
     }
   }
+
+  // Clear trees in +1 border around water (4x4 area for 2x2 brush)
+  if (currentTool === "water") {
+    const borderCells = getCellsInBrushAreaWithBorder(
+      x,
+      y,
+      brushSize,
+      1,
+      MAP_SIZE,
+    );
+    for (const borderCell of borderCells) {
+      // Prevent trees in border area
+      treeValueMap = setCellValue(treeValueMap, borderCell.x, borderCell.y, 1);
+    }
+  }
+
+  return { drawMap, waterValueMap, treeValueMap };
 }

@@ -63,9 +63,7 @@ eraserToolButton.addEventListener("click", () => {
 
 // Helper function to get available canvas height
 function getCanvasHeight() {
-  const viewportHeight = window.visualViewport
-    ? window.visualViewport.height
-    : window.innerHeight;
+  const viewportHeight = window.visualViewport ? window.visualViewport.height : window.innerHeight;
   return viewportHeight - toolbar.offsetHeight;
 }
 
@@ -92,7 +90,7 @@ let treeValueMap, waterValueMap, waterTileMap, groundTileMap, treeTileMap, drawM
 
 drawMap = generateDrawMap();
 
-treeValueMap = applyOrganicIterations(generateNoiseMap(MAP_SIZE), ITERATIONS);
+treeValueMap = applyOrganicIterations(generateNoiseMap(MAP_SIZE), 10);
 
 groundTileMap = generateGroundTileMap();
 

@@ -48,6 +48,39 @@ export function getCellsInBrushArea(centerX, centerY, brushSize, mapSize) {
   return cells;
 }
 
+// Get all cells in a brush area expanded by a border width
+// Returns cells within (brushSize + 2*borderWidth) x (brushSize + 2*borderWidth) area
+// Used for clearing trees in a border around water painting
+// borderWidth: 0 = no border (same as getCellsInBrushArea), 1 = +1 tile border, etc.
+export function getCellsInBrushAreaWithBorder(
+  centerX,
+  centerY,
+  brushSize,
+  borderWidth,
+  mapSize,
+) {
+  const cells = [];
+  const halfBrush = Math.floor(brushSize / 2);
+
+  // Calculate expanded boundaries (brush + border on all sides)
+  const startX = centerX - halfBrush - borderWidth;
+  const startY = centerY - halfBrush - borderWidth;
+  const endX = startX + brushSize + 2 * borderWidth;
+  const endY = startY + brushSize + 2 * borderWidth;
+
+  // Iterate through expanded area and collect valid cells
+  for (let y = startY; y < endY; y++) {
+    for (let x = startX; x < endX; x++) {
+      // Only include cells within map bounds
+      if (x >= 0 && x < mapSize && y >= 0 && y < mapSize) {
+        cells.push({ x, y });
+      }
+    }
+  }
+
+  return cells;
+}
+
 // Toggle cell value (0→1, 1→0) at given coordinates
 // Sets isBeingDrawn flag to true to indicate cell is being actively drawn
 // Returns a new map (immutable operation)

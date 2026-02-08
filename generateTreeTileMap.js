@@ -17,19 +17,19 @@ export function generateTreeTileMap(valueMap) {
         if (y > 0 && x > 0) {
           tileMap[y - 1][x - 1] = {
             sum,
-            tile: tileMap[y - 1][x - 1].tile === 1250 ? 1282 : 1225,
+            tile: tileMap[y - 1][x - 1]?.tile === 1250 ? 1282 : 1225,
           };
         }
-        if (y > 0 && x < MAP_SIZE - 1) {
+        if (y > 0 && x < MAP_SIZE) {
           tileMap[y - 1][x] = {
             sum,
-            tile: tileMap[y - 1][x].tile === 1249 ? 1283 : 1226,
+            tile: tileMap[y - 1][x]?.tile === 1249 ? 1283 : 1226,
           };
         }
         if (x > 0) {
           tileMap[y][x - 1] = { sum, tile: 1249 };
         }
-        if (x < MAP_SIZE - 1) {
+        if (x < MAP_SIZE) {
           tileMap[y][x] = { sum, tile: 1250 };
         }
       } else {
@@ -39,13 +39,13 @@ export function generateTreeTileMap(valueMap) {
             tile: tileMap[y - 1][x - 1]?.tile || 0,
           };
         }
-        if (y > 0 && x < MAP_SIZE - 1) {
+        if (y > 0 && x < MAP_SIZE) {
           tileMap[y - 1][x] = { sum, tile: tileMap[y - 1][x]?.tile || 0 };
         }
         if (x > 0) {
           tileMap[y][x - 1] = { sum, tile: tileMap[y][x - 1]?.tile || 0 };
         }
-        if (x < MAP_SIZE - 1) {
+        if (x < MAP_SIZE) {
           tileMap[y][x] = { sum, tile: tileMap[y][x]?.tile || 0 };
         }
       }
@@ -58,9 +58,7 @@ export function generateTreeTileMap(valueMap) {
     }
     for (let x = 0; x < MAP_SIZE; x++) {
       if (tileMap[y][x]) {
-        tileMap[y][x].spritePosition = getTileSpritePosition(
-          tileMap[y][x].tile,
-        );
+        tileMap[y][x].spritePosition = getTileSpritePosition(tileMap[y][x].tile);
       }
     }
   }
@@ -83,7 +81,7 @@ function sumNeighborValues(valueMap, x, y) {
   }
 
   // top-right
-  if (y > 0 && x < MAP_SIZE - 1) {
+  if (y > 0 && x < MAP_SIZE) {
     value = valueMap[y - 1][x].value;
     if (value !== 1) {
       sum++;
@@ -103,7 +101,7 @@ function sumNeighborValues(valueMap, x, y) {
   }
 
   // bottom-right
-  if (x < MAP_SIZE - 1) {
+  if (x < MAP_SIZE) {
     value = valueMap[y][x].value;
     if (value !== 1) {
       sum++;

@@ -23,4 +23,4 @@ export const FLOOR_TO_WALL_THRESHOLD = 5;
 
 export const BACKGROUND_COLOR = "#7e9432";
 
-export const SEED = 1;
+export const SEED = 2;
