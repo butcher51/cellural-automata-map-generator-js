@@ -168,10 +168,14 @@ let initialPinchDistance = null;
 let lastTouchMidpoint = null;
 let initialZoom = null;
 
+// State for right-click pan
+let isPanning = false;
+let lastPanMousePosition = null;
+
 // Cursor preview state
-let cursorGridX = null;  // Grid X position of cursor (null if outside canvas)
-let cursorGridY = null;  // Grid Y position of cursor (null if outside canvas)
-let cursorPreviewCells = [];  // Array of {x, y} cells to preview
+let cursorGridX = null; // Grid X position of cursor (null if outside canvas)
+let cursorGridY = null; // Grid Y position of cursor (null if outside canvas)
+let cursorPreviewCells = []; // Array of {x, y} cells to preview
 
 // Load number sprite sheet (100x10 PNG: nine 10x10 digits 0-8)
 const numberSprite = new Image();
@@ -236,6 +240,14 @@ window.addEventListener("keyup", (e) => {
 
 // Handle mouse down to start painting
 function handleMouseDown(event) {
+  // Handle right-click pan
+  if (event.button === 2) {
+    isPanning = true;
+    lastPanMousePosition = { x: event.clientX, y: event.clientY };
+    canvas.style.cursor = "grabbing";
+    return;
+  }
+
   // Only respond to left click
   if (event.button !== 0) {
     return;
@@ -260,6 +272,20 @@ function handleMouseDown(event) {
 
 // Handle mouse move to continue painting
 function handleMouseMove(event) {
+  // Handle panning (takes priority)
+  if (isPanning && lastPanMousePosition) {
+    const dx = event.clientX - lastPanMousePosition.x;
+    const dy = event.clientY - lastPanMousePosition.y;
+
+    // Screen delta maps directly to camera delta (1:1 relationship)
+    camera.x -= dx;
+    camera.y -= dy;
+
+    // Update last position for continuous movement
+    lastPanMousePosition = { x: event.clientX, y: event.clientY };
+    return;
+  }
+
   if (!isDrawing) {
     return;
   }
@@ -279,7 +305,15 @@ function handleMouseMove(event) {
 }
 
 // Handle mouse up to finish painting and rerun iterations
-function handleMouseUp() {
+function handleMouseUp(event) {
+  // Handle pan end
+  if (isPanning) {
+    isPanning = false;
+    lastPanMousePosition = null;
+    canvas.style.cursor = "";
+    return;
+  }
+
   if (!isDrawing) {
     return;
   }
@@ -427,7 +461,17 @@ canvas.addEventListener("mousemove", handleMouseMove);
 canvas.addEventListener("mouseup", handleMouseUp);
 
 // Also handle mouse leaving canvas
-canvas.addEventListener("mouseleave", handleMouseUp);
+canvas.addEventListener("mouseleave", (event) => {
+  // Stop panning if cursor leaves canvas
+  if (isPanning) {
+    isPanning = false;
+    lastPanMousePosition = null;
+    canvas.style.cursor = "";
+  }
+
+  // Also handle painting cleanup
+  handleMouseUp(event);
+});
 
 // Track cursor for brush preview (even when not drawing)
 canvas.addEventListener("mousemove", (event) => {
