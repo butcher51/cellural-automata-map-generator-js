@@ -65,8 +65,8 @@ The project uses **Vitest** as its testing framework. Tests are located in `*.te
 
 To enable unit testing in a Node.js environment while keeping DOM-dependent code in the browser:
 
-- **map-utils.js** - Contains pure, testable functions (no DOM dependencies)
 - **generator.js** - Contains browser-specific code (uses `document`, `window`, canvas API)
+- **util functions** - every util should have its own file: generateXYTile -> generateXYTile.js
 
 When adding new features, place pure logic in map-utils.js and rendering/DOM manipulation in generator.js. This separation allows comprehensive unit testing without needing a browser environment.
 
