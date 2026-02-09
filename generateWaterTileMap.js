@@ -1,25 +1,44 @@
-import { MAP_SIZE } from "./constants.js";
 import { getTileSpritePosition } from "./getTileSpritePosition.js";
 
 // Edge tiles
-const WATER_BORDER_TOP = 194;
-const WATER_BORDER_RIGHT = 219;
-const WATER_BORDER_BOTTOM = 266;
-const WATER_BORDER_LEFT = 217;
+export const WATER_BORDER_TOP = 194;
+export const WATER_BORDER_RIGHT = 219;
+export const WATER_BORDER_BOTTOM = 266;
+export const WATER_BORDER_LEFT = 217;
 
 // Outside corners (convex)
-const WATER_BORDER_CORNER_TOP_LEFT = 193;
-const WATER_BORDER_CORNER_TOP_RIGHT = 195;
-const WATER_BORDER_CORNER_BOTTOM_LEFT = 265;
-const WATER_BORDER_CORNER_BOTTOM_RIGHT = 267;
+export const WATER_BORDER_CORNER_TOP_LEFT = 193;
+export const WATER_BORDER_CORNER_TOP_RIGHT = 195;
+export const WATER_BORDER_CORNER_BOTTOM_LEFT = 265;
+export const WATER_BORDER_CORNER_BOTTOM_RIGHT = 267;
 
 // Inside corners (concave)
-const WATER_BORDER_INSIDE_TOP_LEFT = 441;
-const WATER_BORDER_INSIDE_TOP_RIGHT = 443;
-const WATER_BORDER_INSIDE_BOTTOM_LEFT = 489;
-const WATER_BORDER_INSIDE_BOTTOM_RIGHT = 491;
+export const WATER_BORDER_INSIDE_TOP_LEFT = 441;
+export const WATER_BORDER_INSIDE_TOP_RIGHT = 443;
+export const WATER_BORDER_INSIDE_BOTTOM_LEFT = 489;
+export const WATER_BORDER_INSIDE_BOTTOM_RIGHT = 491;
 
-const WATER_INTERIOR_TILE = 847;
+export const WATER_INTERIOR_TILE = 847;
+
+// Grouped exports for convenience
+export const WATER_EDGE_TILES = [
+  WATER_BORDER_TOP,
+  WATER_BORDER_RIGHT,
+  WATER_BORDER_BOTTOM,
+  WATER_BORDER_LEFT,
+];
+export const WATER_CORNER_TILES = [
+  WATER_BORDER_CORNER_TOP_LEFT,
+  WATER_BORDER_CORNER_TOP_RIGHT,
+  WATER_BORDER_CORNER_BOTTOM_LEFT,
+  WATER_BORDER_CORNER_BOTTOM_RIGHT,
+];
+export const WATER_INSIDE_CORNER_TILES = [
+  WATER_BORDER_INSIDE_TOP_LEFT,
+  WATER_BORDER_INSIDE_TOP_RIGHT,
+  WATER_BORDER_INSIDE_BOTTOM_LEFT,
+  WATER_BORDER_INSIDE_BOTTOM_RIGHT,
+];
 
 function getWaterBorderTile(valueMap, x, y) {
   const height = valueMap.length;
@@ -93,13 +112,17 @@ function getWaterBorderTile(valueMap, x, y) {
 
 export function generateWaterTileMap(valueMap) {
   const tileMap = [];
-  for (let y = 0; y < MAP_SIZE; y++) {
+  const height = valueMap.length;
+  const width = valueMap[0]?.length || 0;
+
+  for (let y = 0; y < height; y++) {
     tileMap[y] = [];
-    for (let x = 0; x < MAP_SIZE; x++) {
+    for (let x = 0; x < width; x++) {
       if (valueMap[y][x].value === 1) {
         const tile = getWaterBorderTile(valueMap, x, y);
         tileMap[y][x] = {
           tile: 1,
+          tileIndex: tile,
           spritePosition: getTileSpritePosition(tile),
         };
       }
