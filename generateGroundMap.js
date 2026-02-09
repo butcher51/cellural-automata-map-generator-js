@@ -1,6 +1,9 @@
-import { MAP_SIZE, SEED } from "./constants.js";
+import { GROUND_TILES, MAP_SIZE, SEED } from "./constants.js";
+import { getRandomTile } from "./getRandomTile.js";
 import { getTileSpritePosition } from "./getTileSpritePosition.js";
 import { createRandom } from "./seed.js";
+
+const random = createRandom(SEED);
 
 export function generateGroundTileMap() {
   const tileMap = [];
@@ -9,43 +12,9 @@ export function generateGroundTileMap() {
   for (let y = 0; y < MAP_SIZE; y++) {
     tileMap[y] = [];
     for (let x = 0; x < MAP_SIZE; x++) {
-      tile = getGroundTile();
+      tile = getRandomTile(GROUND_TILES, random);
       tileMap[y][x] = { tile, spritePosition: getTileSpritePosition(tile) };
     }
   }
   return tileMap;
-}
-
-const groundTiles = [
-  { index: 1, chance: 1 },
-  { index: 2, chance: 0.5 },
-  { index: 3, chance: 0.1 },
-  { index: 4, chance: 0.1 },
-  { index: 24 + 1, chance: 0.1 },
-  { index: 24 + 2, chance: 0.1 },
-  { index: 24 + 3, chance: 0.1 },
-  { index: 24 + 4, chance: 0.1 },
-  { index: 48 + 1, chance: 0.1 },
-  { index: 48 + 2, chance: 0.1 },
-  { index: 48 + 3, chance: 0.01 },
-  { index: 48 + 4, chance: 0.01 },
-  { index: 72 + 1, chance: 0.01 },
-  { index: 72 + 2, chance: 0.01 },
-  { index: 72 + 3, chance: 0.01 },
-  { index: 72 + 4, chance: 0.01 },
-  { index: 96 + 1, chance: 0.01 },
-  { index: 96 + 2, chance: 0.01 },
-  { index: 96 + 3, chance: 0.01 },
-  { index: 96 + 4, chance: 0.01 },
-];
-
-const random = createRandom(SEED);
-
-function getGroundTile() {
-  return groundTiles.reduce((selected, tile) => {
-    if (random() < tile.chance) {
-      return tile.index;
-    }
-    return selected;
-  }, 1);
 }

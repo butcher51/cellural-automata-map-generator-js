@@ -1,4 +1,7 @@
+import { SEED } from "./constants.js";
+import { getRandomTile } from "./getRandomTile.js";
 import { getTileSpritePosition } from "./getTileSpritePosition.js";
+import { createRandom } from "./seed.js";
 
 // Edge tiles
 export const WATER_BORDER_TOP = 194;
@@ -18,29 +21,21 @@ export const WATER_BORDER_INSIDE_TOP_RIGHT = 443;
 export const WATER_BORDER_INSIDE_BOTTOM_LEFT = 489;
 export const WATER_BORDER_INSIDE_BOTTOM_RIGHT = 491;
 
-export const WATER_INTERIOR_TILE = 847;
+export const WATER_INTERIOR_TILES = [
+  { index: 841, chance: 1 },
+  { index: 847, chance: 0.5 },
+  { index: 855, chance: 0.1 },
+  { index: 857, chance: 0.1 },
+];
 
 // Grouped exports for convenience
-export const WATER_EDGE_TILES = [
-  WATER_BORDER_TOP,
-  WATER_BORDER_RIGHT,
-  WATER_BORDER_BOTTOM,
-  WATER_BORDER_LEFT,
-];
-export const WATER_CORNER_TILES = [
-  WATER_BORDER_CORNER_TOP_LEFT,
-  WATER_BORDER_CORNER_TOP_RIGHT,
-  WATER_BORDER_CORNER_BOTTOM_LEFT,
-  WATER_BORDER_CORNER_BOTTOM_RIGHT,
-];
-export const WATER_INSIDE_CORNER_TILES = [
-  WATER_BORDER_INSIDE_TOP_LEFT,
-  WATER_BORDER_INSIDE_TOP_RIGHT,
-  WATER_BORDER_INSIDE_BOTTOM_LEFT,
-  WATER_BORDER_INSIDE_BOTTOM_RIGHT,
-];
+export const WATER_EDGE_TILES = [WATER_BORDER_TOP, WATER_BORDER_RIGHT, WATER_BORDER_BOTTOM, WATER_BORDER_LEFT];
+export const WATER_CORNER_TILES = [WATER_BORDER_CORNER_TOP_LEFT, WATER_BORDER_CORNER_TOP_RIGHT, WATER_BORDER_CORNER_BOTTOM_LEFT, WATER_BORDER_CORNER_BOTTOM_RIGHT];
+export const WATER_INSIDE_CORNER_TILES = [WATER_BORDER_INSIDE_TOP_LEFT, WATER_BORDER_INSIDE_TOP_RIGHT, WATER_BORDER_INSIDE_BOTTOM_LEFT, WATER_BORDER_INSIDE_BOTTOM_RIGHT];
 
-function getWaterBorderTile(valueMap, x, y) {
+const random = createRandom(SEED);
+
+function getWaterBorderTile(valueMap, x, y, existingTileMap) {
   const height = valueMap.length;
   const width = valueMap[0]?.length || 0;
 
@@ -134,11 +129,14 @@ function getWaterBorderTile(valueMap, x, y) {
     return WATER_BORDER_INSIDE_BOTTOM_RIGHT;
   }
 
+  if (existingTileMap[y][x] && existingTileMap[y][x].tileIndex && WATER_INTERIOR_TILES.find((t) => t.index === existingTileMap[y][x].tileIndex)) {
+    return existingTileMap[y][x].tileIndex;
+  }
   // Interior tile (no borders)
-  return WATER_INTERIOR_TILE;
+  return getRandomTile(WATER_INTERIOR_TILES, random);
 }
 
-export function generateWaterTileMap(valueMap) {
+export function generateWaterTileMap(valueMap, existingTileMap) {
   const tileMap = [];
   const height = valueMap.length;
   const width = valueMap[0]?.length || 0;
@@ -147,9 +145,8 @@ export function generateWaterTileMap(valueMap) {
     tileMap[y] = [];
     for (let x = 0; x < width; x++) {
       if (valueMap[y][x].value === 1) {
-        const tile = getWaterBorderTile(valueMap, x, y);
+        const tile = getWaterBorderTile(valueMap, x, y, existingTileMap);
         tileMap[y][x] = {
-          tile: 1,
           tileIndex: tile,
           spritePosition: getTileSpritePosition(tile),
         };

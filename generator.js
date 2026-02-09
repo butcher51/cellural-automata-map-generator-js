@@ -155,7 +155,7 @@ treeValueMap = applyOrganicIterations(generateNoiseMap(MAP_SIZE), 10);
 
 waterValueMap = generateWaterValueMap();
 
-waterTileMap = generateWaterTileMap(waterValueMap);
+waterTileMap = generateWaterTileMap(waterValueMap, waterTileMap);
 
 treeTileMap = generateTreeTileMap(treeValueMap);
 
@@ -323,7 +323,7 @@ function handleMouseUp(event) {
 
   // Process water first
   waterValueMap = cleanupWaterArtifacts(waterValueMap);
-  waterTileMap = generateWaterTileMap(waterValueMap);
+  waterTileMap = generateWaterTileMap(waterValueMap, waterTileMap);
 
   // Then clear trees based on validated water
   treeValueMap = clearTreesFromWater(treeValueMap, waterValueMap);
@@ -483,6 +483,15 @@ canvas.addEventListener("mouseleave", () => {
   cursorGridX = null;
   cursorGridY = null;
   cursorPreviewCells = [];
+});
+
+// Zoom controls
+document.getElementById("zoom-in").addEventListener("click", () => {
+  zoom = Math.min(zoom + 1, MAX_ZOOM);
+});
+
+document.getElementById("zoom-out").addEventListener("click", () => {
+  zoom = Math.max(zoom - 1, MIN_ZOOM);
 });
 
 // Attach touch event listeners for touch-to-paint

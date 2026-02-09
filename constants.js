@@ -24,3 +24,26 @@ export const FLOOR_TO_WALL_THRESHOLD = 5;
 export const BACKGROUND_COLOR = "#7e9432";
 
 export const SEED = 2;
+
+export const GROUND_TILES = [
+  { index: 1, chance: 1 },
+  { index: 2, chance: 0.5 },
+  { index: 3, chance: 0.1 },
+  { index: 4, chance: 0.1 },
+  { index: 24 + 1, chance: 0.1 },
+  { index: 24 + 2, chance: 0.1 },
+  { index: 24 + 3, chance: 0.1 },
+  { index: 24 + 4, chance: 0.1 },
+  { index: 48 + 1, chance: 0.1 },
+  { index: 48 + 2, chance: 0.1 },
+  { index: 48 + 3, chance: 0.01 },
+  { index: 48 + 4, chance: 0.01 },
+  { index: 72 + 1, chance: 0.01 },
+  { index: 72 + 2, chance: 0.01 },
+  { index: 72 + 3, chance: 0.01 },
+  { index: 72 + 4, chance: 0.01 },
+  { index: 96 + 1, chance: 0.01 },
+  { index: 96 + 2, chance: 0.01 },
+  { index: 96 + 3, chance: 0.01 },
+  { index: 96 + 4, chance: 0.01 },
+];
