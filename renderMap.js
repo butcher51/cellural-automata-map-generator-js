@@ -1,7 +1,7 @@
 import { MAP_SIZE } from "./constants.js";
 
 // Render the map with colors based on cell objects and sprite numbers
-export function renderMap(valueMap, treeTileMap, groundTileMap, waterTileMap, drawMap, ctx, boxSize, numberSprite, tileMapSprite, cameraOffset, zoom) {
+export function renderMap(valueMap, treeTileMap, groundTileMap, waterTileMap, drawMap, ctx, boxSize, numberSprite, tileMapSprite, cameraOffset, zoom, cursorPreviewCells) {
   const scaledSize = boxSize * zoom;
 
   for (let y = 0; y < MAP_SIZE; y++) {
@@ -66,7 +66,21 @@ export function renderMap(valueMap, treeTileMap, groundTileMap, waterTileMap, dr
       }
 
       if (drawMap[y][x]) {
-        ctx.fillStyle = "#000000";
+        ctx.fillStyle = "rgba(0, 0, 0, 0.6)";
+        ctx.fillRect(cellX, cellY, scaledSize, scaledSize);
+      }
+    }
+  }
+
+  // Render cursor preview (30% transparent yellow overlay)
+  if (cursorPreviewCells && cursorPreviewCells.length > 0) {
+    ctx.fillStyle = "rgba(255, 255, 100, 0.3)"; // Yellow with 30% opacity
+    for (const cell of cursorPreviewCells) {
+      const cellX = cell.x * scaledSize - cameraOffset.x;
+      const cellY = cell.y * scaledSize - cameraOffset.y;
+
+      // Only render if in viewport
+      if (cellX + scaledSize >= 0 && cellX <= ctx.canvas.width && cellY + scaledSize >= 0 && cellY <= ctx.canvas.height) {
         ctx.fillRect(cellX, cellY, scaledSize, scaledSize);
       }
     }

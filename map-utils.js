@@ -1,9 +1,5 @@
 // Pure utility functions for map generation
-import {
-  FLOOR_TO_WALL_THRESHOLD,
-  SEED,
-  WALL_SURVIVAL_THRESHOLD,
-} from "./constants.js";
+import { FLOOR_TO_WALL_THRESHOLD, SEED, WALL_SURVIVAL_THRESHOLD } from "./constants.js";
 import { createRandom } from "./seed.js";
 
 // Create a deep copy of a 2D map array
@@ -52,13 +48,7 @@ export function getCellsInBrushArea(centerX, centerY, brushSize, mapSize) {
 // Returns cells within (brushSize + 2*borderWidth) x (brushSize + 2*borderWidth) area
 // Used for clearing trees in a border around water painting
 // borderWidth: 0 = no border (same as getCellsInBrushArea), 1 = +1 tile border, etc.
-export function getCellsInBrushAreaWithBorder(
-  centerX,
-  centerY,
-  brushSize,
-  borderWidth,
-  mapSize,
-) {
+export function getCellsInBrushAreaWithBorder(centerX, centerY, brushSize, borderWidth, mapSize) {
   const cells = [];
   const halfBrush = Math.floor(brushSize / 2);
 
@@ -229,12 +219,7 @@ export function countNeighborFriends(map, x, y) {
     const neighborX = x + dx;
 
     // Check bounds
-    if (
-      neighborY >= 0 &&
-      neighborY < map.length &&
-      neighborX >= 0 &&
-      neighborX < map[neighborY].length
-    ) {
+    if (neighborY >= 0 && neighborY < map.length && neighborX >= 0 && neighborX < map[neighborY].length) {
       const neighbor = map[neighborY][neighborX];
       if (neighbor && neighbor.value === 1) {
         count++;
@@ -274,8 +259,7 @@ export function applyCaveRules(map) {
       const cell = map[y][x];
       if (cell && cell.friendCount !== undefined) {
         // Apply different threshold based on current cell state
-        const threshold =
-          cell.value === 1 ? WALL_SURVIVAL_THRESHOLD : FLOOR_TO_WALL_THRESHOLD;
+        const threshold = cell.value === 1 ? WALL_SURVIVAL_THRESHOLD : FLOOR_TO_WALL_THRESHOLD;
 
         cell.value = cell.friendCount >= threshold ? 1 : 0;
       }
@@ -354,14 +338,7 @@ export function isIslandBorderCell(valueMap, x, y) {
 
 // Clamp camera to map boundaries
 // Returns clamped camera position { x, y }
-export function clampCamera(
-  camera,
-  mapSize,
-  boxSize,
-  zoom,
-  viewportWidth,
-  viewportHeight,
-) {
+export function clampCamera(camera, mapSize, boxSize, zoom, viewportWidth, viewportHeight) {
   const worldWidth = mapSize * boxSize * zoom;
   const worldHeight = mapSize * boxSize * zoom;
 

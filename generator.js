@@ -1,30 +1,75 @@
 import { cleanupWaterArtifacts } from "./cleanupWaterArtifacts.js";
-import {
-  BACKGROUND_COLOR,
-  BOX_SIZE,
-  CAMERA_SPEED,
-  ZOOM as DEFAULT_ZOOM,
-  ITERATIONS,
-  MAP_SIZE,
-} from "./constants.js";
+import { BACKGROUND_COLOR, BOX_SIZE, CAMERA_SPEED, ZOOM as DEFAULT_ZOOM, ITERATIONS, MAP_SIZE } from "./constants.js";
 import { generateDrawMap } from "./generateDrawMap.js";
 import { generateGroundTileMap } from "./generateGroundMap.js";
 import { generateTreeTileMap } from "./generateTreeTileMap.js";
 import { generateWaterTileMap } from "./generateWaterTileMap.js";
 import { generateWaterValueMap } from "./generateWaterValueMap.js";
-import {
-  applyOrganicIterations,
-  clampCamera,
-  clearDrawingFlags,
-  generateNoiseMap,
-  updateCamera,
-} from "./map-utils.js";
+import { applyOrganicIterations, clampCamera, clearDrawingFlags, generateNoiseMap, getCellsInBrushArea, pixelToGridCoordinate, setCellValue, updateCamera } from "./map-utils.js";
 import { paintCellAtPosition } from "./paintCellAtPosition.js";
 import { renderMap } from "./renderMap.js";
 import { initZoomPrevention } from "./zoomPrevention.js";
 
 // Initialize zoom prevention
 initZoomPrevention();
+
+/**
+ * Updates cursor preview based on mouse/touch position
+ * @param {Event} event - Mouse or touch event with clientX/clientY
+ */
+function updateCursorPreview(event) {
+  const rect = canvas.getBoundingClientRect();
+  const pixelX = event.clientX - rect.left;
+  const pixelY = event.clientY - rect.top;
+
+  // Convert screen pixel to world pixel (add camera offset)
+  const worldPixelX = pixelX + camera.x;
+  const worldPixelY = pixelY + camera.y;
+
+  // Convert to grid coordinates
+  const { x, y } = pixelToGridCoordinate(worldPixelX, worldPixelY, BOX_SIZE * zoom);
+
+  // Validate bounds
+  if (x < 0 || x >= MAP_SIZE || y < 0 || y >= MAP_SIZE) {
+    cursorGridX = null;
+    cursorGridY = null;
+    cursorPreviewCells = [];
+    return;
+  }
+
+  cursorGridX = x;
+  cursorGridY = y;
+
+  // Get brush size based on tool
+  const brushSize = currentTool === "water" ? 3 : 2;
+
+  // Calculate preview cells
+  cursorPreviewCells = getCellsInBrushArea(x, y, brushSize, MAP_SIZE);
+}
+
+/**
+ * Clears trees from water regions and their borders
+ * @param {Array} treeValueMap - The tree value map
+ * @param {Array} waterValueMap - The validated water value map
+ * @returns {Array} Updated tree value map with trees cleared from water areas
+ */
+function clearTreesFromWater(treeValueMap, waterValueMap) {
+  const height = waterValueMap.length;
+  const width = waterValueMap[0]?.length || 0;
+
+  let updatedTreeMap = treeValueMap;
+
+  for (let y = 0; y < height; y++) {
+    for (let x = 0; x < width; x++) {
+      // Clear trees where water exists
+      if (waterValueMap[y][x].value === 1) {
+        updatedTreeMap = setCellValue(updatedTreeMap, x, y, 1);
+      }
+    }
+  }
+
+  return updatedTreeMap;
+}
 
 // Camera state
 let camera = {
@@ -77,9 +122,7 @@ eraserToolButton.addEventListener("click", () => {
 
 // Helper function to get available canvas height
 function getCanvasHeight() {
-  const viewportHeight = window.visualViewport
-    ? window.visualViewport.height
-    : window.innerHeight;
+  const viewportHeight = window.visualViewport ? window.visualViewport.height : window.innerHeight;
   return viewportHeight - toolbar.offsetHeight;
 }
 
@@ -102,18 +145,13 @@ ctx.fillStyle = BACKGROUND_COLOR;
 ctx.fillRect(0, 0, canvas.width, canvas.height);
 
 // Initialize the map with organic cave patterns
-let treeValueMap,
-  waterValueMap,
-  waterTileMap,
-  groundTileMap,
-  treeTileMap,
-  drawMap;
+let treeValueMap, waterValueMap, waterTileMap, groundTileMap, treeTileMap, drawMap;
 
 drawMap = generateDrawMap();
 
-treeValueMap = applyOrganicIterations(generateNoiseMap(MAP_SIZE), 10);
-
 groundTileMap = generateGroundTileMap();
+
+treeValueMap = applyOrganicIterations(generateNoiseMap(MAP_SIZE), 10);
 
 waterValueMap = generateWaterValueMap();
 
@@ -129,6 +167,11 @@ let paintedCellsInStroke = new Set();
 let initialPinchDistance = null;
 let lastTouchMidpoint = null;
 let initialZoom = null;
+
+// Cursor preview state
+let cursorGridX = null;  // Grid X position of cursor (null if outside canvas)
+let cursorGridY = null;  // Grid Y position of cursor (null if outside canvas)
+let cursorPreviewCells = [];  // Array of {x, y} cells to preview
 
 // Load number sprite sheet (100x10 PNG: nine 10x10 digits 0-8)
 const numberSprite = new Image();
@@ -244,15 +287,16 @@ function handleMouseUp() {
   isDrawing = false;
   paintedCellsInStroke = new Set();
 
-  // NOW rerun cellular automaton iterations (clears isBeingDrawn flags)
-  //generateMap();
-  treeValueMap = applyOrganicIterations(treeValueMap, ITERATIONS);
-
-  treeTileMap = generateTreeTileMap(treeValueMap);
-
+  // Process water first
   waterValueMap = cleanupWaterArtifacts(waterValueMap);
-
   waterTileMap = generateWaterTileMap(waterValueMap);
+
+  // Then clear trees based on validated water
+  treeValueMap = clearTreesFromWater(treeValueMap, waterValueMap);
+
+  // Finally process trees
+  treeValueMap = applyOrganicIterations(treeValueMap, ITERATIONS);
+  treeTileMap = generateTreeTileMap(treeValueMap);
 
   clearDrawingFlags(drawMap);
 }
@@ -291,6 +335,9 @@ function handleTouchStart(event) {
     isDrawing = true;
     paintedCellsInStroke = new Set();
 
+    // Update cursor preview for touch
+    updateCursorPreview(event.touches[0]);
+
     paintCellAtPosition({
       canvas,
       currentTool,
@@ -311,14 +358,8 @@ function handleTouchMove(event) {
 
   if (event.touches.length === 2 && initialPinchDistance !== null) {
     // Two fingers: handle pinch zoom and pan
-    const currentDistance = getTouchDistance(
-      event.touches[0],
-      event.touches[1],
-    );
-    const currentMidpoint = getTouchMidpoint(
-      event.touches[0],
-      event.touches[1],
-    );
+    const currentDistance = getTouchDistance(event.touches[0], event.touches[1]);
+    const currentMidpoint = getTouchMidpoint(event.touches[0], event.touches[1]);
 
     // Calculate zoom based on pinch ratio
     const pinchRatio = currentDistance / initialPinchDistance;
@@ -333,6 +374,9 @@ function handleTouchMove(event) {
       camera.y -= dy / zoom;
     }
     lastTouchMidpoint = currentMidpoint;
+
+    // Clear preview during two-finger gestures
+    cursorPreviewCells = [];
     return;
   }
 
@@ -340,6 +384,9 @@ function handleTouchMove(event) {
   if (!isDrawing || event.touches.length !== 1) {
     return;
   }
+
+  // Update cursor preview for touch
+  updateCursorPreview(event.touches[0]);
 
   paintCellAtPosition({
     canvas,
@@ -382,6 +429,18 @@ canvas.addEventListener("mouseup", handleMouseUp);
 // Also handle mouse leaving canvas
 canvas.addEventListener("mouseleave", handleMouseUp);
 
+// Track cursor for brush preview (even when not drawing)
+canvas.addEventListener("mousemove", (event) => {
+  updateCursorPreview(event);
+});
+
+canvas.addEventListener("mouseleave", () => {
+  // Clear preview when cursor leaves canvas
+  cursorGridX = null;
+  cursorGridY = null;
+  cursorPreviewCells = [];
+});
+
 // Attach touch event listeners for touch-to-paint
 canvas.addEventListener("touchstart", handleTouchStart, { passive: false });
 canvas.addEventListener("touchmove", handleTouchMove, { passive: false });
@@ -398,33 +457,14 @@ function animate() {
   camera = updateCamera(camera, keys, CAMERA_SPEED, zoom);
 
   // Clamp camera to map boundaries
-  camera = clampCamera(
-    camera,
-    MAP_SIZE,
-    BOX_SIZE,
-    zoom,
-    canvas.width,
-    canvas.height,
-  );
+  camera = clampCamera(camera, MAP_SIZE, BOX_SIZE, zoom, canvas.width, canvas.height);
 
   // Clear canvas with background color
   ctx.fillStyle = BACKGROUND_COLOR;
   ctx.fillRect(0, 0, canvas.width, canvas.height);
 
   // Render the map with sprite, camera offset, and zoom
-  renderMap(
-    treeValueMap,
-    treeTileMap,
-    groundTileMap,
-    waterTileMap,
-    drawMap,
-    ctx,
-    BOX_SIZE,
-    numberSprite,
-    tileMapSprite,
-    camera,
-    zoom,
-  );
+  renderMap(treeValueMap, treeTileMap, groundTileMap, waterTileMap, drawMap, ctx, BOX_SIZE, numberSprite, tileMapSprite, camera, zoom, cursorPreviewCells);
 
   requestAnimationFrame(animate);
 }

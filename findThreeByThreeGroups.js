@@ -37,21 +37,28 @@ function has3x3BlockAt(tileMap, startX, startY) {
 }
 
 /**
- * Checks if any cells in the 3x3 block are already marked
+ * Checks if the 3x3 block has a small overlap (1-2 cells) with already marked blocks
  * @param {Array<Array<Object>>} tileMap - 2D tile map
  * @param {number} startX - Starting X coordinate
  * @param {number} startY - Starting Y coordinate
- * @returns {boolean} True if any cell has partOf3x3: true
+ * @returns {boolean} True if exactly 1 or 2 cells overlap (prevents marking).
+ *                    False if 0 or 3+ cells overlap (allows marking for dense packing)
  */
 function hasOverlapWithMarkedCells(tileMap, startX, startY) {
+  let overlapCount = 0;
+
+  // Count overlapping cells
   for (let dy = 0; dy < 3; dy++) {
     for (let dx = 0; dx < 3; dx++) {
       if (tileMap[startY + dy][startX + dx].partOf3x3 === true) {
-        return true;
+        overlapCount++;
       }
     }
   }
-  return false;
+
+  // Return true only if exactly 1 or 2 cells overlap
+  // This prevents small overlaps but allows heavy overlaps (dense packing)
+  return overlapCount === 1 || overlapCount === 2;
 }
 
 /**
@@ -77,9 +84,7 @@ function mark3x3Block(tileMap, startX, startY) {
  */
 function filterMapToMarkedCells(tileMap, height, width) {
   // Create map filled with {value: 0, tile: 0}
-  const filteredMap = Array.from({ length: height }, () =>
-    Array.from({ length: width }, () => ({ value: 0, tile: 0 }))
-  );
+  const filteredMap = Array.from({ length: height }, () => Array.from({ length: width }, () => ({ value: 0, tile: 0 })));
 
   // Copy marked cells
   for (let y = 0; y < height; y++) {
@@ -123,14 +128,12 @@ export function findThreeByThreeGroups(waterValueMap) {
   const width = waterValueMap[0].length;
 
   // Deep copy to avoid mutation
-  const markedMap = waterValueMap.map(row =>
-    row.map(cell => ({ ...cell }))
-  );
+  const markedMap = waterValueMap.map((row) => row.map((cell) => ({ ...cell })));
 
   // PASS 1: Scan and mark 3x3 blocks
   for (let y = 0; y <= height - 3; y++) {
     for (let x = 0; x <= width - 3; x++) {
-      // Check validity and mark if no overlap
+      // Check validity and mark if overlap is not 1-2 cells
       if (has3x3BlockAt(markedMap, x, y) &&
           !hasOverlapWithMarkedCells(markedMap, x, y)) {
         mark3x3Block(markedMap, x, y);

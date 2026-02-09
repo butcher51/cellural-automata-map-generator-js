@@ -13,7 +13,7 @@ export function generateTreeTileMap(valueMap) {
     for (let x = start; x < MAP_SIZE; x += 2) {
       const sum = sumNeighborValues(valueMap, x, y);
 
-      if (sum > 2) {
+      if (sum > 3) {
         if (y > 0 && x > 0) {
           tileMap[y - 1][x - 1] = {
             sum,

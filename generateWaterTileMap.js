@@ -78,6 +78,34 @@ function getWaterBorderTile(valueMap, x, y) {
     return WATER_BORDER_CORNER_BOTTOM_RIGHT;
   }
 
+  // Diagonal corners (1 cardinal is land AND opposite diagonal is land)
+  // This handles cases where two water regions touch at a corner
+  // CRITICAL: Only apply when exactly 1 cardinal is land (not 2+)
+  if (right && !top && !bottom && !left && bottomLeft) {
+    return WATER_BORDER_CORNER_BOTTOM_RIGHT;
+  }
+  if (right && !top && !bottom && !left && topLeft) {
+    return WATER_BORDER_CORNER_TOP_RIGHT;
+  }
+  if (left && !top && !bottom && !right && bottomRight) {
+    return WATER_BORDER_CORNER_BOTTOM_LEFT;
+  }
+  if (left && !top && !bottom && !right && topRight) {
+    return WATER_BORDER_CORNER_TOP_LEFT;
+  }
+  if (top && !left && !right && !bottom && bottomLeft) {
+    return WATER_BORDER_CORNER_TOP_LEFT;
+  }
+  if (top && !left && !right && !bottom && bottomRight) {
+    return WATER_BORDER_CORNER_TOP_RIGHT;
+  }
+  if (bottom && !left && !right && !top && topLeft) {
+    return WATER_BORDER_CORNER_BOTTOM_LEFT;
+  }
+  if (bottom && !left && !right && !top && topRight) {
+    return WATER_BORDER_CORNER_BOTTOM_RIGHT;
+  }
+
   // Edge tiles (1 cardinal is land)
   if (top) {
     return WATER_BORDER_TOP;

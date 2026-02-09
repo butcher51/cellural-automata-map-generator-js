@@ -1,22 +1,7 @@
 import { BOX_SIZE, MAP_SIZE } from "./constants.js";
-import {
-  getCellsInBrushArea,
-  getCellsInBrushAreaWithBorder,
-  pixelToGridCoordinate,
-  setCellValue,
-} from "./map-utils.js";
+import { getCellsInBrushArea, pixelToGridCoordinate, setCellValue } from "./map-utils.js";
 
-export function paintCellAtPosition({
-  canvas,
-  currentTool,
-  event,
-  drawMap,
-  treeValueMap,
-  waterValueMap,
-  camera,
-  zoom,
-  paintedCellsInStroke,
-}) {
+export function paintCellAtPosition({ canvas, currentTool, event, drawMap, treeValueMap, waterValueMap, camera, zoom, paintedCellsInStroke }) {
   // Get click coordinates relative to canvas
   const rect = canvas.getBoundingClientRect();
   const pixelX = event.clientX - rect.left;
@@ -27,19 +12,15 @@ export function paintCellAtPosition({
   const worldPixelY = pixelY + camera.y;
 
   // Convert to grid coordinates (center of brush) using scaled box size
-  const { x, y } = pixelToGridCoordinate(
-    worldPixelX,
-    worldPixelY,
-    BOX_SIZE * zoom,
-  );
+  const { x, y } = pixelToGridCoordinate(worldPixelX, worldPixelY, BOX_SIZE * zoom);
 
   // Validate center cell bounds
   if (x < 0 || x >= MAP_SIZE || y < 0 || y >= MAP_SIZE) {
     return;
   }
 
-  // Get all cells in 2x2 brush area
-  const brushSize = 2;
+  // Get brush size based on tool (3x3 for water, 2x2 for others)
+  const brushSize = currentTool === "water" ? 3 : 2;
   const cellsToPaint = getCellsInBrushArea(x, y, brushSize, MAP_SIZE);
 
   // Paint each cell (avoid redundant sets within a single stroke)
@@ -52,27 +33,11 @@ export function paintCellAtPosition({
         waterValueMap = setCellValue(waterValueMap, cell.x, cell.y, 0);
       } else if (currentTool === "water") {
         waterValueMap = setCellValue(waterValueMap, cell.x, cell.y, 1);
-        treeValueMap = setCellValue(treeValueMap, cell.x, cell.y, 1);
       } else if (currentTool === "eraser") {
         treeValueMap = setCellValue(treeValueMap, cell.x, cell.y, 1);
         waterValueMap = setCellValue(waterValueMap, cell.x, cell.y, 0);
       }
       paintedCellsInStroke.add(cellKey);
-    }
-  }
-
-  // Clear trees in +1 border around water (4x4 area for 2x2 brush)
-  if (currentTool === "water") {
-    const borderCells = getCellsInBrushAreaWithBorder(
-      x,
-      y,
-      brushSize,
-      1,
-      MAP_SIZE,
-    );
-    for (const borderCell of borderCells) {
-      // Prevent trees in border area
-      treeValueMap = setCellValue(treeValueMap, borderCell.x, borderCell.y, 1);
     }
   }
 
