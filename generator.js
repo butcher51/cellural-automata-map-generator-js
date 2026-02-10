@@ -10,7 +10,8 @@ import { generateWaterTileMap } from "./generateWaterTileMap.js";
 import { generateWaterValueMap } from "./generateWaterValueMap.js";
 import { applyOrganicIterations, clampCamera, clearDrawingFlags, generateNoiseMap, getCellsInBrushArea, pixelToGridCoordinate, setCellValue, updateCamera } from "./map-utils.js";
 import { paintCellAtPosition } from "./paintCellAtPosition.js";
-import { renderMap } from "./renderMap.js";
+import { createLayer } from "./layer.js";
+import { render } from "./render.js";
 import { initZoomPrevention } from "./zoomPrevention.js";
 
 // Initialize zoom prevention
@@ -159,23 +160,34 @@ ctx.fillStyle = BACKGROUND_COLOR;
 ctx.fillRect(0, 0, canvas.width, canvas.height);
 
 // Initialize the map with organic cave patterns
-let treeValueMap, waterValueMap, waterTileMap, cliffValueMap, cliffTileMap, groundTileMap, treeTileMap, drawMap;
+let layers = [];
+let activeLayerIndex = 0;
+let drawMap;
+
+function getActiveLayer() {
+  return layers[activeLayerIndex];
+}
 
 drawMap = generateDrawMap();
 
-groundTileMap = generateGroundTileMap();
+// Create the base layer and populate its maps
+const baseLayer = createLayer("layer-0", "Base Layer", 0);
 
-treeValueMap = applyOrganicIterations(generateNoiseMap(MAP_SIZE), 10);
+baseLayer.groundTileMap = generateGroundTileMap();
 
-waterValueMap = generateWaterValueMap();
+baseLayer.treeValueMap = applyOrganicIterations(generateNoiseMap(MAP_SIZE), 10);
 
-waterTileMap = generateWaterTileMap(waterValueMap, waterTileMap);
+baseLayer.waterValueMap = generateWaterValueMap();
 
-cliffValueMap = generateCliffValueMap();
+baseLayer.waterTileMap = generateWaterTileMap(baseLayer.waterValueMap, baseLayer.waterTileMap);
 
-cliffTileMap = generateCliffTileMap(cliffValueMap, cliffTileMap || []);
+baseLayer.cliffValueMap = generateCliffValueMap();
 
-treeTileMap = generateTreeTileMap(treeValueMap);
+baseLayer.cliffTileMap = generateCliffTileMap(baseLayer.cliffValueMap, baseLayer.cliffTileMap || []);
+
+baseLayer.treeTileMap = generateTreeTileMap(baseLayer.treeValueMap);
+
+layers.push(baseLayer);
 
 // State for drag-to-paint interaction
 let isDrawing = false;
@@ -275,14 +287,15 @@ function handleMouseDown(event) {
   paintedCellsInStroke = new Set();
 
   // Paint the initial cells with brush
+  const layer = getActiveLayer();
   paintCellAtPosition({
     canvas,
     currentTool,
     event,
     drawMap,
-    treeValueMap,
-    waterValueMap,
-    cliffValueMap,
+    treeValueMap: layer.treeValueMap,
+    waterValueMap: layer.waterValueMap,
+    cliffValueMap: layer.cliffValueMap,
     camera,
     zoom,
     paintedCellsInStroke,
@@ -310,14 +323,15 @@ function handleMouseMove(event) {
   }
 
   // Paint the initial cells with brush
+  const layer = getActiveLayer();
   paintCellAtPosition({
     canvas,
     currentTool,
     event,
     drawMap,
-    treeValueMap,
-    waterValueMap,
-    cliffValueMap,
+    treeValueMap: layer.treeValueMap,
+    waterValueMap: layer.waterValueMap,
+    cliffValueMap: layer.cliffValueMap,
     camera,
     zoom,
     paintedCellsInStroke,
@@ -341,21 +355,23 @@ function handleMouseUp(event) {
   isDrawing = false;
   paintedCellsInStroke = new Set();
 
+  const layer = getActiveLayer();
+
   // Process cliffs
-  cliffValueMap = cleanupCliffArtifacts(cliffValueMap);
-  cliffTileMap = generateCliffTileMap(cliffValueMap, cliffTileMap);
+  layer.cliffValueMap = cleanupCliffArtifacts(layer.cliffValueMap);
+  layer.cliffTileMap = generateCliffTileMap(layer.cliffValueMap, layer.cliffTileMap);
 
   // Process water
-  waterValueMap = cleanupWaterArtifacts(waterValueMap);
-  waterTileMap = generateWaterTileMap(waterValueMap, waterTileMap);
+  layer.waterValueMap = cleanupWaterArtifacts(layer.waterValueMap);
+  layer.waterTileMap = generateWaterTileMap(layer.waterValueMap, layer.waterTileMap);
 
   // Clear trees based on validated water and cliffs
-  treeValueMap = clearTreesFromWater(treeValueMap, waterValueMap);
-  treeValueMap = clearTreesFromCliffs(treeValueMap, cliffValueMap);
+  layer.treeValueMap = clearTreesFromWater(layer.treeValueMap, layer.waterValueMap);
+  layer.treeValueMap = clearTreesFromCliffs(layer.treeValueMap, layer.cliffValueMap);
 
   // Finally process trees
-  treeValueMap = applyOrganicIterations(treeValueMap, ITERATIONS);
-  treeTileMap = generateTreeTileMap(treeValueMap);
+  layer.treeValueMap = applyOrganicIterations(layer.treeValueMap, ITERATIONS);
+  layer.treeTileMap = generateTreeTileMap(layer.treeValueMap);
 
   clearDrawingFlags(drawMap);
 }
@@ -397,14 +413,15 @@ function handleTouchStart(event) {
     // Update cursor preview for touch
     updateCursorPreview(event.touches[0]);
 
+    const layer = getActiveLayer();
     paintCellAtPosition({
       canvas,
       currentTool,
       event: event.touches[0], // Pass touch point (has clientX/clientY)
       drawMap,
-      treeValueMap,
-      waterValueMap,
-      cliffValueMap,
+      treeValueMap: layer.treeValueMap,
+      waterValueMap: layer.waterValueMap,
+      cliffValueMap: layer.cliffValueMap,
       camera,
       zoom,
       paintedCellsInStroke,
@@ -448,14 +465,15 @@ function handleTouchMove(event) {
   // Update cursor preview for touch
   updateCursorPreview(event.touches[0]);
 
+  const layer = getActiveLayer();
   paintCellAtPosition({
     canvas,
     currentTool,
     event: event.touches[0],
     drawMap,
-    treeValueMap,
-    waterValueMap,
-    cliffValueMap,
+    treeValueMap: layer.treeValueMap,
+    waterValueMap: layer.waterValueMap,
+    cliffValueMap: layer.cliffValueMap,
     camera,
     zoom,
     paintedCellsInStroke,
@@ -544,7 +562,7 @@ function animate() {
   ctx.fillRect(0, 0, canvas.width, canvas.height);
 
   // Render the map with sprite, camera offset, and zoom
-  renderMap(treeValueMap, treeTileMap, groundTileMap, waterTileMap, cliffTileMap, drawMap, ctx, BOX_SIZE, numberSprite, tileMapSprite, camera, zoom, cursorPreviewCells);
+  render(layers, drawMap, ctx, BOX_SIZE, numberSprite, tileMapSprite, camera, zoom, cursorPreviewCells);
 
   requestAnimationFrame(animate);
 }
