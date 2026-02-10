@@ -57,15 +57,18 @@ export function render(layers, drawMap, ctx, boxSize, numberSprite, tileMapSprit
         }
 
         // Bottom layer: always apply its sprite
-        // Higher layers: only apply if layer has non-ground content
+        // Higher layers: only render cells where they have ground
         if (isBottomLayer) {
           if (layerSpriteX !== null) {
             spriteX = layerSpriteX;
             spriteY = layerSpriteY;
           }
-        } else if (hasOverride) {
-          spriteX = layerSpriteX;
-          spriteY = layerSpriteY;
+        } else {
+          const hasGround = layer.groundTileMap && layer.groundTileMap[y][x] != null;
+          if (hasGround && layerSpriteX !== null) {
+            spriteX = layerSpriteX;
+            spriteY = layerSpriteY;
+          }
         }
       }
 

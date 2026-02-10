@@ -8,11 +8,39 @@ import { generateGroundTileMap } from "./generateGroundMap.js";
 import { generateTreeTileMap } from "./generateTreeTileMap.js";
 import { generateWaterTileMap } from "./generateWaterTileMap.js";
 import { generateWaterValueMap } from "./generateWaterValueMap.js";
+import { getTargetLayerIndex } from "./getTargetLayerIndex.js";
+import { createLayer } from "./layer.js";
 import { applyOrganicIterations, clampCamera, clearDrawingFlags, generateNoiseMap, getCellsInBrushArea, pixelToGridCoordinate, setCellValue, updateCamera } from "./map-utils.js";
 import { paintCellAtPosition } from "./paintCellAtPosition.js";
-import { createLayer } from "./layer.js";
 import { render } from "./render.js";
+import { syncLayerStack } from "./syncLayerStack.js";
 import { initZoomPrevention } from "./zoomPrevention.js";
+
+// State for drag-to-paint interaction
+let isDrawing = false;
+let paintedCellsInStroke = new Set();
+let strokeTargetLayerIndex = 0;
+
+// State for two-finger gestures (pinch zoom and pan)
+let initialPinchDistance = null;
+let lastTouchMidpoint = null;
+let initialZoom = null;
+
+// State for right-click pan
+let isPanning = false;
+let lastPanMousePosition = null;
+
+// Cursor preview state
+let cursorGridX = null; // Grid X position of cursor (null if outside canvas)
+let cursorGridY = null; // Grid Y position of cursor (null if outside canvas)
+let cursorPreviewCells = []; // Array of {x, y} cells to preview
+
+// Load number sprite sheet (100x10 PNG: nine 10x10 digits 0-8)
+const numberSprite = new Image();
+numberSprite.src = "./assets/numbers.png";
+
+const tileMapSprite = new Image();
+tileMapSprite.src = "./assets/overworld.png";
 
 // Initialize zoom prevention
 initZoomPrevention();
@@ -189,30 +217,41 @@ baseLayer.treeTileMap = generateTreeTileMap(baseLayer.treeValueMap);
 
 layers.push(baseLayer);
 
-// State for drag-to-paint interaction
-let isDrawing = false;
-let paintedCellsInStroke = new Set();
+// Debug panel for layer stack
+function updateLayerDebugPanel() {
+  const list = document.getElementById("layer-list");
+  if (!list) return;
+  list.innerHTML = "";
+  for (let i = 0; i < layers.length; i++) {
+    const layer = layers[i];
+    const entry = document.createElement("div");
+    entry.className = "layer-entry" + (i === strokeTargetLayerIndex ? " active" : "");
 
-// State for two-finger gestures (pinch zoom and pan)
-let initialPinchDistance = null;
-let lastTouchMidpoint = null;
-let initialZoom = null;
+    const label = document.createElement("span");
+    label.textContent = `${layer.name} (order: ${layer.order})`;
+    entry.appendChild(label);
 
-// State for right-click pan
-let isPanning = false;
-let lastPanMousePosition = null;
+    if (i > 0) {
+      const deleteBtn = document.createElement("button");
+      deleteBtn.className = "layer-delete-btn";
+      deleteBtn.textContent = "x";
+      deleteBtn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        layers.splice(i);
+        strokeTargetLayerIndex = 0;
+        updateLayerDebugPanel();
+      });
+      entry.appendChild(deleteBtn);
+    }
 
-// Cursor preview state
-let cursorGridX = null; // Grid X position of cursor (null if outside canvas)
-let cursorGridY = null; // Grid Y position of cursor (null if outside canvas)
-let cursorPreviewCells = []; // Array of {x, y} cells to preview
-
-// Load number sprite sheet (100x10 PNG: nine 10x10 digits 0-8)
-const numberSprite = new Image();
-numberSprite.src = "./assets/numbers.png";
-
-const tileMapSprite = new Image();
-tileMapSprite.src = "./assets/overworld.png";
+    entry.addEventListener("click", () => {
+      strokeTargetLayerIndex = i;
+      updateLayerDebugPanel();
+    });
+    list.appendChild(entry);
+  }
+}
+updateLayerDebugPanel();
 
 // Wait for both images to load before starting animation
 let spriteLoaded = false;
@@ -286,8 +325,17 @@ function handleMouseDown(event) {
   isDrawing = true;
   paintedCellsInStroke = new Set();
 
+  // Auto-detect target layer based on cursor position
+  const rect = canvas.getBoundingClientRect();
+  const pixelX = event.clientX - rect.left;
+  const pixelY = event.clientY - rect.top;
+  const worldPixelX = pixelX + camera.x;
+  const worldPixelY = pixelY + camera.y;
+  const gridPos = pixelToGridCoordinate(worldPixelX, worldPixelY, BOX_SIZE * zoom);
+  strokeTargetLayerIndex = getTargetLayerIndex(layers, gridPos.x, gridPos.y);
+
   // Paint the initial cells with brush
-  const layer = getActiveLayer();
+  const layer = layers[strokeTargetLayerIndex];
   paintCellAtPosition({
     canvas,
     currentTool,
@@ -322,8 +370,8 @@ function handleMouseMove(event) {
     return;
   }
 
-  // Paint the initial cells with brush
-  const layer = getActiveLayer();
+  // Paint using the stroke target layer
+  const layer = layers[strokeTargetLayerIndex];
   paintCellAtPosition({
     canvas,
     currentTool,
@@ -355,7 +403,7 @@ function handleMouseUp(event) {
   isDrawing = false;
   paintedCellsInStroke = new Set();
 
-  const layer = getActiveLayer();
+  const layer = layers[strokeTargetLayerIndex];
 
   // Process cliffs
   layer.cliffValueMap = cleanupCliffArtifacts(layer.cliffValueMap);
@@ -372,6 +420,10 @@ function handleMouseUp(event) {
   // Finally process trees
   layer.treeValueMap = applyOrganicIterations(layer.treeValueMap, ITERATIONS);
   layer.treeTileMap = generateTreeTileMap(layer.treeValueMap);
+
+  // Sync layer stack (create/update/remove upper layers based on cliff interiors)
+  layers = syncLayerStack(layers, strokeTargetLayerIndex);
+  updateLayerDebugPanel();
 
   clearDrawingFlags(drawMap);
 }
@@ -413,7 +465,17 @@ function handleTouchStart(event) {
     // Update cursor preview for touch
     updateCursorPreview(event.touches[0]);
 
-    const layer = getActiveLayer();
+    // Auto-detect target layer based on touch position
+    const touch = event.touches[0];
+    const rect = canvas.getBoundingClientRect();
+    const pixelX = touch.clientX - rect.left;
+    const pixelY = touch.clientY - rect.top;
+    const worldPixelX = pixelX + camera.x;
+    const worldPixelY = pixelY + camera.y;
+    const gridPos = pixelToGridCoordinate(worldPixelX, worldPixelY, BOX_SIZE * zoom);
+    strokeTargetLayerIndex = getTargetLayerIndex(layers, gridPos.x, gridPos.y);
+
+    const layer = layers[strokeTargetLayerIndex];
     paintCellAtPosition({
       canvas,
       currentTool,
@@ -465,7 +527,7 @@ function handleTouchMove(event) {
   // Update cursor preview for touch
   updateCursorPreview(event.touches[0]);
 
-  const layer = getActiveLayer();
+  const layer = layers[strokeTargetLayerIndex];
   paintCellAtPosition({
     canvas,
     currentTool,
