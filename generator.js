@@ -44,7 +44,7 @@ function updateCursorPreview(event) {
   cursorGridY = y;
 
   // Get brush size based on tool
-  const brushSize = (currentTool === "water" || currentTool === "cliff") ? 3 : 2;
+  const brushSize = currentTool === "water" || currentTool === "cliff" ? 3 : 2;
 
   // Calculate preview cells
   cursorPreviewCells = getCellsInBrushArea(x, y, brushSize, MAP_SIZE);
@@ -145,12 +145,6 @@ function getCanvasHeight() {
   const viewportHeight = window.visualViewport ? window.visualViewport.height : window.innerHeight;
   return viewportHeight - toolbar.offsetHeight;
 }
-
-// Disable image smoothing for crisp pixel art
-ctx.imageSmoothingEnabled = false;
-ctx.mozImageSmoothingEnabled = false;
-ctx.webkitImageSmoothingEnabled = false;
-ctx.msImageSmoothingEnabled = false;
 
 canvas.width = window.innerWidth;
 canvas.height = getCanvasHeight();
