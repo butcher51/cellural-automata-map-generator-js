@@ -1,7 +1,7 @@
 import { MAP_SIZE } from "./constants.js";
 
 // Render the map with colors based on cell objects and sprite numbers
-export function renderMap(valueMap, treeTileMap, groundTileMap, waterTileMap, drawMap, ctx, boxSize, numberSprite, tileMapSprite, cameraOffset, zoom, cursorPreviewCells) {
+export function renderMap(valueMap, treeTileMap, groundTileMap, waterTileMap, cliffTileMap, drawMap, ctx, boxSize, numberSprite, tileMapSprite, cameraOffset, zoom, cursorPreviewCells) {
   const scaledSize = boxSize * zoom;
 
   for (let y = 0; y < MAP_SIZE; y++) {
@@ -29,6 +29,12 @@ export function renderMap(valueMap, treeTileMap, groundTileMap, waterTileMap, dr
         if (waterTile && waterTile.tile !== 0) {
           spriteX = waterTile.spritePosition.spriteX;
           spriteY = waterTile.spritePosition.spriteY;
+        }
+
+        const cliffTile = cliffTileMap[y]?.[x];
+        if (cliffTile && cliffTile.tileIndex) {
+          spriteX = cliffTile.spritePosition.spriteX;
+          spriteY = cliffTile.spritePosition.spriteY;
         }
 
         ctx.drawImage(

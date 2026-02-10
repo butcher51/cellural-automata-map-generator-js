@@ -1,7 +1,7 @@
 import { BOX_SIZE, MAP_SIZE } from "./constants.js";
 import { getCellsInBrushArea, pixelToGridCoordinate, setCellValue } from "./map-utils.js";
 
-export function paintCellAtPosition({ canvas, currentTool, event, drawMap, treeValueMap, waterValueMap, camera, zoom, paintedCellsInStroke }) {
+export function paintCellAtPosition({ canvas, currentTool, event, drawMap, treeValueMap, waterValueMap, cliffValueMap, camera, zoom, paintedCellsInStroke }) {
   // Get click coordinates relative to canvas
   const rect = canvas.getBoundingClientRect();
   const pixelX = event.clientX - rect.left;
@@ -19,8 +19,8 @@ export function paintCellAtPosition({ canvas, currentTool, event, drawMap, treeV
     return;
   }
 
-  // Get brush size based on tool (3x3 for water, 2x2 for others)
-  const brushSize = currentTool === "water" ? 3 : 2;
+  // Get brush size based on tool (3x3 for water/cliff, 2x2 for others)
+  const brushSize = (currentTool === "water" || currentTool === "cliff") ? 3 : 2;
   const cellsToPaint = getCellsInBrushArea(x, y, brushSize, MAP_SIZE);
 
   // Paint each cell (avoid redundant sets within a single stroke)
@@ -31,15 +31,22 @@ export function paintCellAtPosition({ canvas, currentTool, event, drawMap, treeV
       if (currentTool === "tree") {
         treeValueMap = setCellValue(treeValueMap, cell.x, cell.y, 0);
         waterValueMap = setCellValue(waterValueMap, cell.x, cell.y, 0);
+        cliffValueMap = setCellValue(cliffValueMap, cell.x, cell.y, 0);
       } else if (currentTool === "water") {
         waterValueMap = setCellValue(waterValueMap, cell.x, cell.y, 1);
+        cliffValueMap = setCellValue(cliffValueMap, cell.x, cell.y, 0);
+      } else if (currentTool === "cliff") {
+        cliffValueMap = setCellValue(cliffValueMap, cell.x, cell.y, 1);
+        waterValueMap = setCellValue(waterValueMap, cell.x, cell.y, 0);
+        treeValueMap = setCellValue(treeValueMap, cell.x, cell.y, 0);
       } else if (currentTool === "eraser") {
         treeValueMap = setCellValue(treeValueMap, cell.x, cell.y, 1);
         waterValueMap = setCellValue(waterValueMap, cell.x, cell.y, 0);
+        cliffValueMap = setCellValue(cliffValueMap, cell.x, cell.y, 0);
       }
       paintedCellsInStroke.add(cellKey);
     }
   }
 
-  return { drawMap, waterValueMap, treeValueMap };
+  return { drawMap, waterValueMap, treeValueMap, cliffValueMap };
 }
