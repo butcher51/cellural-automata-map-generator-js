@@ -1,7 +1,7 @@
 import { BOX_SIZE, MAP_SIZE } from "./constants.js";
 import { getCellsInBrushArea, pixelToGridCoordinate, setCellValue } from "./map-utils.js";
 
-export function paintCellAtPosition({ canvas, currentTool, event, drawMap, treeValueMap, waterValueMap, cliffValueMap, camera, zoom, paintedCellsInStroke }) {
+export function paintCellAtPosition({ canvas, currentTool, event, drawMap, treeValueMap, waterValueMap, cliffValueMap, camera, zoom, paintedCellsInStroke, groundTileMap }) {
   // Get click coordinates relative to canvas
   const rect = canvas.getBoundingClientRect();
   const pixelX = event.clientX - rect.left;
@@ -25,6 +25,7 @@ export function paintCellAtPosition({ canvas, currentTool, event, drawMap, treeV
 
   // Paint each cell (avoid redundant sets within a single stroke)
   for (const cell of cellsToPaint) {
+    if (groundTileMap && groundTileMap[cell.y]?.[cell.x] == null) continue;
     const cellKey = `${cell.x},${cell.y}`;
     if (!paintedCellsInStroke.has(cellKey)) {
       drawMap[cell.y][cell.x] = true;

@@ -337,6 +337,7 @@ function handleMouseDown(event) {
     camera,
     zoom,
     paintedCellsInStroke,
+    groundTileMap: layer.groundTileMap,
   });
 }
 
@@ -373,6 +374,7 @@ function handleMouseMove(event) {
     camera,
     zoom,
     paintedCellsInStroke,
+    groundTileMap: layer.groundTileMap,
   });
 }
 
@@ -467,6 +469,7 @@ function handleTouchStart(event) {
       camera,
       zoom,
       paintedCellsInStroke,
+      groundTileMap: layer.groundTileMap,
     });
   }
 }
@@ -519,6 +522,7 @@ function handleTouchMove(event) {
     camera,
     zoom,
     paintedCellsInStroke,
+    groundTileMap: layer.groundTileMap,
   });
 }
 
