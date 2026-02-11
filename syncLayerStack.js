@@ -43,6 +43,22 @@ function syncFromLayer(layers, layerIndex) {
         MAP_SIZE,
         existingLayer.groundTileMap,
       );
+      // Clear value maps for cells outside valid ground
+      for (let y = 0; y < MAP_SIZE; y++) {
+        for (let x = 0; x < MAP_SIZE; x++) {
+          if (existingLayer.groundTileMap[y]?.[x] == null) {
+            if (existingLayer.treeValueMap?.[y]?.[x]) {
+              existingLayer.treeValueMap[y][x] = { ...existingLayer.treeValueMap[y][x], value: 1 };
+            }
+            if (existingLayer.waterValueMap?.[y]?.[x]) {
+              existingLayer.waterValueMap[y][x] = { ...existingLayer.waterValueMap[y][x], value: 0 };
+            }
+            if (existingLayer.cliffValueMap?.[y]?.[x]) {
+              existingLayer.cliffValueMap[y][x] = { ...existingLayer.cliffValueMap[y][x], value: 0 };
+            }
+          }
+        }
+      }
       // Regenerate tile maps for the upper layer
       existingLayer.cliffTileMap = generateCliffTileMap(existingLayer.cliffValueMap, existingLayer.cliffTileMap || []);
       existingLayer.waterTileMap = generateWaterTileMap(existingLayer.waterValueMap, existingLayer.waterTileMap);
