@@ -33,9 +33,7 @@ export const WATER_EDGE_TILES = [WATER_BORDER_TOP, WATER_BORDER_RIGHT, WATER_BOR
 export const WATER_CORNER_TILES = [WATER_BORDER_CORNER_TOP_LEFT, WATER_BORDER_CORNER_TOP_RIGHT, WATER_BORDER_CORNER_BOTTOM_LEFT, WATER_BORDER_CORNER_BOTTOM_RIGHT];
 export const WATER_INSIDE_CORNER_TILES = [WATER_BORDER_INSIDE_TOP_LEFT, WATER_BORDER_INSIDE_TOP_RIGHT, WATER_BORDER_INSIDE_BOTTOM_LEFT, WATER_BORDER_INSIDE_BOTTOM_RIGHT];
 
-const random = createRandom(SEED);
-
-function getWaterBorderTile(valueMap, x, y, existingTileMap) {
+function getWaterBorderTile(valueMap, x, y, existingTileMap, random) {
   const height = valueMap.length;
   const width = valueMap[0]?.length || 0;
 
@@ -137,6 +135,7 @@ function getWaterBorderTile(valueMap, x, y, existingTileMap) {
 }
 
 export function generateWaterTileMap(valueMap, existingTileMap) {
+  const random = createRandom(SEED);
   const tileMap = [];
   const height = valueMap.length;
   const width = valueMap[0]?.length || 0;
@@ -145,7 +144,7 @@ export function generateWaterTileMap(valueMap, existingTileMap) {
     tileMap[y] = [];
     for (let x = 0; x < width; x++) {
       if (valueMap[y][x].value === 1) {
-        const tile = getWaterBorderTile(valueMap, x, y, existingTileMap);
+        const tile = getWaterBorderTile(valueMap, x, y, existingTileMap, random);
         tileMap[y][x] = {
           tileIndex: tile,
           spritePosition: getTileSpritePosition(tile),

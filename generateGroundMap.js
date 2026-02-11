@@ -3,9 +3,8 @@ import { getRandomTile } from "./getRandomTile.js";
 import { getTileSpritePosition } from "./getTileSpritePosition.js";
 import { createRandom } from "./seed.js";
 
-const random = createRandom(SEED);
-
 export function generateGroundTileMap() {
+  const random = createRandom(SEED);
   const tileMap = [];
   let tile;
 

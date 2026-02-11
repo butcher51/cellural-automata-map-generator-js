@@ -1,6 +1,6 @@
 import { cleanupCliffArtifacts } from "./cleanupCliffArtifacts.js";
 import { cleanupWaterArtifacts } from "./cleanupWaterArtifacts.js";
-import { BACKGROUND_COLOR, BOX_SIZE, CAMERA_SPEED, ZOOM as DEFAULT_ZOOM, ITERATIONS, MAP_SIZE } from "./constants.js";
+import { BACKGROUND_COLOR, BOX_SIZE, CAMERA_SPEED, ZOOM as DEFAULT_ZOOM, ITERATIONS, MAP_SIZE, SEED, setSeed } from "./constants.js";
 import { generateCliffTileMap } from "./generateCliffTileMap.js";
 import { generateCliffValueMap } from "./generateCliffValueMap.js";
 import { generateDrawMap } from "./generateDrawMap.js";
@@ -579,6 +579,45 @@ document.getElementById("zoom-in").addEventListener("click", () => {
 
 document.getElementById("zoom-out").addEventListener("click", () => {
   zoom = Math.max(zoom - 1, MIN_ZOOM);
+});
+
+// Seed controls
+const seedInput = document.getElementById("seed-input");
+const newSeedButton = document.getElementById("new-seed-button");
+
+function regenerateMap(newSeed) {
+  setSeed(newSeed);
+  seedInput.value = newSeed;
+
+  drawMap = generateDrawMap();
+
+  const baseLayer = createLayer("layer-0", "Base Layer", 0);
+  baseLayer.groundTileMap = generateGroundTileMap();
+  baseLayer.treeValueMap = applyOrganicIterations(generateNoiseMap(MAP_SIZE), 10);
+  baseLayer.waterValueMap = generateWaterValueMap();
+  baseLayer.waterTileMap = generateWaterTileMap(baseLayer.waterValueMap, baseLayer.waterTileMap);
+  baseLayer.cliffValueMap = generateCliffValueMap();
+  baseLayer.cliffTileMap = generateCliffTileMap(baseLayer.cliffValueMap, baseLayer.cliffTileMap || []);
+  baseLayer.treeTileMap = generateTreeTileMap(baseLayer.treeValueMap);
+
+  layers = [baseLayer];
+  activeLayerIndex = 0;
+  strokeTargetLayerIndex = 0;
+  updateLayerDebugPanel();
+}
+
+newSeedButton.addEventListener("click", () => {
+  const newSeed = Math.floor(Math.random() * 10000000);
+  regenerateMap(newSeed);
+});
+
+seedInput.addEventListener("keydown", (e) => {
+  if (e.key === "Enter") {
+    const newSeed = parseInt(seedInput.value, 10);
+    if (!isNaN(newSeed)) {
+      regenerateMap(newSeed);
+    }
+  }
 });
 
 // Attach touch event listeners for touch-to-paint

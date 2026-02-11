@@ -42,6 +42,21 @@
         .tool-button:hover {
             background-color: #4a4a4a;
         }
+        .seed-input {
+            width: 120px;
+            padding: 10px 12px;
+            font-size: 16px;
+            font-family: monospace;
+            background-color: #3a3a3a;
+            color: #ccc;
+            border: 2px solid #4a4a4a;
+            border-radius: 6px;
+            outline: none;
+        }
+        .seed-input:focus {
+            border-color: #7a7a7a;
+            color: #fff;
+        }
         .tool-button.active {
             background-color: #5a5a5a;
             border-color: #7a7a7a;
@@ -113,6 +128,8 @@
         <button id="eraser-tool" class="tool-button">Eraser</button>
         <button id="zoom-out" class="tool-button">-</button>
         <button id="zoom-in" class="tool-button">+</button>
+        <input id="seed-input" class="seed-input" type="number" value="1">
+        <button id="new-seed-button" class="tool-button">New seed</button>
     </div>
     <div id="canvas-container">
         <canvas id="canvas"></canvas>

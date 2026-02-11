@@ -23,7 +23,11 @@ export const FLOOR_TO_WALL_THRESHOLD = 5;
 
 export const BACKGROUND_COLOR = "#7e9432";
 
-export const SEED = 3123123;
+export let SEED = 1;
+
+export function setSeed(newSeed) {
+  SEED = newSeed;
+}
 
 export const GROUND_TILES = [
   { index: 1, chance: 1 },

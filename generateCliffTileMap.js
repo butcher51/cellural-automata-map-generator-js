@@ -35,9 +35,7 @@ export const CLIFF_EDGE_TILES = [CLIFF_BORDER_TOP, CLIFF_BORDER_RIGHT, CLIFF_BOR
 export const CLIFF_CORNER_TILES = [CLIFF_BORDER_CORNER_TOP_LEFT, CLIFF_BORDER_CORNER_TOP_RIGHT, CLIFF_BORDER_CORNER_BOTTOM_LEFT, CLIFF_BORDER_CORNER_BOTTOM_RIGHT];
 export const CLIFF_INSIDE_CORNER_TILES = [CLIFF_BORDER_INSIDE_TOP_LEFT, CLIFF_BORDER_INSIDE_TOP_RIGHT, CLIFF_BORDER_INSIDE_BOTTOM_LEFT, CLIFF_BORDER_INSIDE_BOTTOM_RIGHT];
 
-const random = createRandom(SEED);
-
-function getCliffBorderTile(valueMap, x, y, existingTileMap) {
+function getCliffBorderTile(valueMap, x, y, existingTileMap, random) {
   const height = valueMap.length;
   const width = valueMap[0]?.length || 0;
 
@@ -139,6 +137,7 @@ function getCliffBorderTile(valueMap, x, y, existingTileMap) {
 }
 
 export function generateCliffTileMap(valueMap, existingTileMap) {
+  const random = createRandom(SEED);
   const tileMap = [];
   const height = valueMap.length;
   const width = valueMap[0]?.length || 0;
@@ -147,7 +146,7 @@ export function generateCliffTileMap(valueMap, existingTileMap) {
     tileMap[y] = [];
     for (let x = 0; x < width; x++) {
       if (valueMap[y][x].value === 1) {
-        const tile = getCliffBorderTile(valueMap, x, y, existingTileMap);
+        const tile = getCliffBorderTile(valueMap, x, y, existingTileMap, random);
         tileMap[y][x] = {
           tileIndex: tile,
           spritePosition: getTileSpritePosition(tile),
