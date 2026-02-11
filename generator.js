@@ -8,7 +8,6 @@ import { generateGroundTileMap } from "./generateGroundMap.js";
 import { generateTreeTileMap } from "./generateTreeTileMap.js";
 import { generateWaterTileMap } from "./generateWaterTileMap.js";
 import { generateWaterValueMap } from "./generateWaterValueMap.js";
-import { getTargetLayerIndex } from "./getTargetLayerIndex.js";
 import { createLayer } from "./layer.js";
 import { applyOrganicIterations, clampCamera, clearDrawingFlags, generateNoiseMap, getCellsInBrushArea, pixelToGridCoordinate, setCellValue, updateCamera } from "./map-utils.js";
 import { paintCellAtPosition } from "./paintCellAtPosition.js";
@@ -325,15 +324,6 @@ function handleMouseDown(event) {
   isDrawing = true;
   paintedCellsInStroke = new Set();
 
-  // Auto-detect target layer based on cursor position
-  const rect = canvas.getBoundingClientRect();
-  const pixelX = event.clientX - rect.left;
-  const pixelY = event.clientY - rect.top;
-  const worldPixelX = pixelX + camera.x;
-  const worldPixelY = pixelY + camera.y;
-  const gridPos = pixelToGridCoordinate(worldPixelX, worldPixelY, BOX_SIZE * zoom);
-  strokeTargetLayerIndex = getTargetLayerIndex(layers, gridPos.x, gridPos.y);
-
   // Paint the initial cells with brush
   const layer = layers[strokeTargetLayerIndex];
   paintCellAtPosition({
@@ -464,16 +454,6 @@ function handleTouchStart(event) {
 
     // Update cursor preview for touch
     updateCursorPreview(event.touches[0]);
-
-    // Auto-detect target layer based on touch position
-    const touch = event.touches[0];
-    const rect = canvas.getBoundingClientRect();
-    const pixelX = touch.clientX - rect.left;
-    const pixelY = touch.clientY - rect.top;
-    const worldPixelX = pixelX + camera.x;
-    const worldPixelY = pixelY + camera.y;
-    const gridPos = pixelToGridCoordinate(worldPixelX, worldPixelY, BOX_SIZE * zoom);
-    strokeTargetLayerIndex = getTargetLayerIndex(layers, gridPos.x, gridPos.y);
 
     const layer = layers[strokeTargetLayerIndex];
     paintCellAtPosition({
