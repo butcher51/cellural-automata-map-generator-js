@@ -13,6 +13,7 @@ import { applyOrganicIterations, clampCamera, clearDrawingFlags, generateNoiseMa
 import { paintCellAtPosition } from "./paintCellAtPosition.js";
 import { render } from "./render.js";
 import { syncLayerStack } from "./syncLayerStack.js";
+import { isTreeTool } from "./treeTileConstants.js";
 import { initZoomPrevention } from "./zoomPrevention.js";
 
 // State for drag-to-paint interaction
@@ -72,7 +73,7 @@ function updateCursorPreview(event) {
   cursorGridY = y;
 
   // Get brush size based on tool
-  const brushSize = currentTool === "water" || currentTool === "cliff" ? 3 : 2;
+  const brushSize = (currentTool === "water" || currentTool === "cliff") ? 3 : 2;
 
   // Calculate preview cells
   cursorPreviewCells = getCellsInBrushArea(x, y, brushSize, MAP_SIZE);
@@ -146,10 +147,13 @@ const ctx = canvas.getContext("2d");
 const toolbar = document.getElementById("toolbar");
 
 // Tool selection state
-let currentTool = "tree"; // "tree" or "eraser"
+let currentTool = "tree-1";
 
 // Tool button elements
-const treeToolButton = document.getElementById("tree-tool");
+const tree1Button = document.getElementById("tree-1-tool");
+const tree2Button = document.getElementById("tree-2-tool");
+const tree3Button = document.getElementById("tree-3-tool");
+const tree4Button = document.getElementById("tree-4-tool");
 const waterToolButton = document.getElementById("water-tool");
 const cliffToolButton = document.getElementById("cliff-tool");
 const eraserToolButton = document.getElementById("eraser-tool");
@@ -157,13 +161,19 @@ const eraserToolButton = document.getElementById("eraser-tool");
 // Tool selection handlers
 function setActiveTool(tool) {
   currentTool = tool;
-  treeToolButton.classList.toggle("active", tool === "tree");
+  tree1Button.classList.toggle("active", tool === "tree-1");
+  tree2Button.classList.toggle("active", tool === "tree-2");
+  tree3Button.classList.toggle("active", tool === "tree-3");
+  tree4Button.classList.toggle("active", tool === "tree-4");
   waterToolButton.classList.toggle("active", tool === "water");
   cliffToolButton.classList.toggle("active", tool === "cliff");
   eraserToolButton.classList.toggle("active", tool === "eraser");
 }
 
-treeToolButton.addEventListener("click", () => setActiveTool("tree"));
+tree1Button.addEventListener("click", () => setActiveTool("tree-1"));
+tree2Button.addEventListener("click", () => setActiveTool("tree-2"));
+tree3Button.addEventListener("click", () => setActiveTool("tree-3"));
+tree4Button.addEventListener("click", () => setActiveTool("tree-4"));
 waterToolButton.addEventListener("click", () => setActiveTool("water"));
 cliffToolButton.addEventListener("click", () => setActiveTool("cliff"));
 eraserToolButton.addEventListener("click", () => setActiveTool("eraser"));

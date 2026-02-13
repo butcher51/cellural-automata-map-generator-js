@@ -1,5 +1,6 @@
 import { BOX_SIZE, MAP_SIZE } from "./constants.js";
 import { getCellsInBrushArea, pixelToGridCoordinate, setCellValue } from "./map-utils.js";
+import { isTreeTool, getTreeType } from "./treeTileConstants.js";
 
 export function paintCellAtPosition({ canvas, currentTool, event, drawMap, treeValueMap, waterValueMap, cliffValueMap, camera, zoom, paintedCellsInStroke, groundTileMap }) {
   // Get click coordinates relative to canvas
@@ -29,8 +30,9 @@ export function paintCellAtPosition({ canvas, currentTool, event, drawMap, treeV
     const cellKey = `${cell.x},${cell.y}`;
     if (!paintedCellsInStroke.has(cellKey)) {
       drawMap[cell.y][cell.x] = true;
-      if (currentTool === "tree") {
+      if (isTreeTool(currentTool)) {
         treeValueMap = setCellValue(treeValueMap, cell.x, cell.y, 0);
+        treeValueMap[cell.y][cell.x].treeType = getTreeType(currentTool);
         waterValueMap = setCellValue(waterValueMap, cell.x, cell.y, 0);
         cliffValueMap = setCellValue(cliffValueMap, cell.x, cell.y, 0);
       } else if (currentTool === "water") {

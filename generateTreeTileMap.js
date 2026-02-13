@@ -1,8 +1,40 @@
 import { MAP_SIZE } from "./constants.js";
 import { getTileSpritePosition } from "./getTileSpritePosition.js";
+import { TREE_TILES, DEFAULT_TREE_TYPE } from "./treeTileConstants.js";
 
-// tree tiles:  4854, 4855
-//              4878, 4879
+/**
+ * Returns the most common treeType in the 2x2 neighborhood at (x, y).
+ * The neighborhood is: (x-1, y-1), (x, y-1), (x-1, y), (x, y).
+ * Cells without treeType or out-of-bounds default to DEFAULT_TREE_TYPE.
+ */
+export function getDominantTreeType(valueMap, x, y) {
+  const counts = {};
+  const neighbors = [
+    [x - 1, y - 1],
+    [x, y - 1],
+    [x - 1, y],
+    [x, y],
+  ];
+
+  for (const [nx, ny] of neighbors) {
+    let type = DEFAULT_TREE_TYPE;
+    if (ny >= 0 && ny < valueMap.length && nx >= 0 && nx < (valueMap[ny]?.length || 0)) {
+      type = valueMap[ny][nx].treeType || DEFAULT_TREE_TYPE;
+    }
+    counts[type] = (counts[type] || 0) + 1;
+  }
+
+  let dominant = DEFAULT_TREE_TYPE;
+  let maxCount = 0;
+  for (const [type, count] of Object.entries(counts)) {
+    if (count > maxCount) {
+      maxCount = count;
+      dominant = Number(type);
+    }
+  }
+
+  return dominant;
+}
 
 export function generateTreeTileMap(valueMap) {
   const tileMap = [];
@@ -12,25 +44,27 @@ export function generateTreeTileMap(valueMap) {
     const start = y % 2 === 0 ? 0 : 1;
     for (let x = start; x < MAP_SIZE; x += 2) {
       const sum = sumNeighborValues(valueMap, x, y);
+      const dominantType = getDominantTreeType(valueMap, x, y);
+      const tiles = TREE_TILES[dominantType] || TREE_TILES[DEFAULT_TREE_TYPE];
 
       if (sum > 3) {
         if (y > 0 && x > 0) {
           tileMap[y - 1][x - 1] = {
             sum,
-            tile: tileMap[y - 1][x - 1]?.tile === 1250 ? 1282 : 1225,
+            tile: tileMap[y - 1][x - 1]?.tile === tiles.bottomRight ? tiles.topLeftAdjacent : tiles.topLeft,
           };
         }
         if (y > 0 && x < MAP_SIZE) {
           tileMap[y - 1][x] = {
             sum,
-            tile: tileMap[y - 1][x]?.tile === 1249 ? 1283 : 1226,
+            tile: tileMap[y - 1][x]?.tile === tiles.bottomLeft ? tiles.topRightAdjacent : tiles.topRight,
           };
         }
         if (x > 0) {
-          tileMap[y][x - 1] = { sum, tile: 1249 };
+          tileMap[y][x - 1] = { sum, tile: tiles.bottomLeft };
         }
         if (x < MAP_SIZE) {
-          tileMap[y][x] = { sum, tile: 1250 };
+          tileMap[y][x] = { sum, tile: tiles.bottomRight };
         }
       } else {
         if (y > 0 && x > 0) {
