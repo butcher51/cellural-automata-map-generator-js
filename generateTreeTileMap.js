@@ -1,6 +1,7 @@
 import { MAP_SIZE } from "./constants.js";
 import { getTileSpritePosition } from "./getTileSpritePosition.js";
 import { TREE_TILES, DEFAULT_TREE_TYPE } from "./treeTileConstants.js";
+import { isBottomRightTreeTile, isBottomLeftTreeTile } from "./isBottomTreeTile.js";
 
 /**
  * Returns the most common treeType in the 2x2 neighborhood at (x, y).
@@ -51,13 +52,13 @@ export function generateTreeTileMap(valueMap) {
         if (y > 0 && x > 0) {
           tileMap[y - 1][x - 1] = {
             sum,
-            tile: tileMap[y - 1][x - 1]?.tile === tiles.bottomRight ? tiles.topLeftAdjacent : tiles.topLeft,
+            tile: isBottomRightTreeTile(tileMap[y - 1][x - 1]?.tile) ? tiles.topLeftAdjacent : tiles.topLeft,
           };
         }
         if (y > 0 && x < MAP_SIZE) {
           tileMap[y - 1][x] = {
             sum,
-            tile: tileMap[y - 1][x]?.tile === tiles.bottomLeft ? tiles.topRightAdjacent : tiles.topRight,
+            tile: isBottomLeftTreeTile(tileMap[y - 1][x]?.tile) ? tiles.topRightAdjacent : tiles.topRight,
           };
         }
         if (x > 0) {
