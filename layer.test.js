@@ -13,14 +13,12 @@ describe("createLayer", () => {
     const layer = createLayer("layer-0", "Base Layer", 0);
     expect(layer.treeValueMap).toBeNull();
     expect(layer.waterValueMap).toBeNull();
-    expect(layer.cliffValueMap).toBeNull();
   });
 
   it("should initialize all tile maps to null", () => {
     const layer = createLayer("layer-0", "Base Layer", 0);
     expect(layer.treeTileMap).toBeNull();
     expect(layer.waterTileMap).toBeNull();
-    expect(layer.cliffTileMap).toBeNull();
     expect(layer.groundTileMap).toBeNull();
   });
 
@@ -35,12 +33,10 @@ describe("getValueMaps", () => {
     const layer = createLayer("layer-0", "Base", 0);
     layer.treeValueMap = [[{ value: 1 }]];
     layer.waterValueMap = [[{ value: 0 }]];
-    layer.cliffValueMap = [[{ value: 1 }]];
 
     const result = getValueMaps(layer);
     expect(result.treeValueMap).toBe(layer.treeValueMap);
     expect(result.waterValueMap).toBe(layer.waterValueMap);
-    expect(result.cliffValueMap).toBe(layer.cliffValueMap);
   });
 
   it("should return null maps when layer has null maps", () => {
@@ -48,13 +44,12 @@ describe("getValueMaps", () => {
     const result = getValueMaps(layer);
     expect(result.treeValueMap).toBeNull();
     expect(result.waterValueMap).toBeNull();
-    expect(result.cliffValueMap).toBeNull();
   });
 
-  it("should only contain the three value map keys", () => {
+  it("should only contain the two value map keys", () => {
     const layer = createLayer("layer-0", "Base", 0);
     const result = getValueMaps(layer);
-    expect(Object.keys(result)).toEqual(["treeValueMap", "waterValueMap", "cliffValueMap"]);
+    expect(Object.keys(result)).toEqual(["treeValueMap", "waterValueMap"]);
   });
 });
 
@@ -63,13 +58,11 @@ describe("getTileMaps", () => {
     const layer = createLayer("layer-0", "Base", 0);
     layer.treeTileMap = [[{ tile: 1 }]];
     layer.waterTileMap = [[{ tile: 2 }]];
-    layer.cliffTileMap = [[{ tile: 3 }]];
     layer.groundTileMap = [[{ tile: 4 }]];
 
     const result = getTileMaps(layer);
     expect(result.treeTileMap).toBe(layer.treeTileMap);
     expect(result.waterTileMap).toBe(layer.waterTileMap);
-    expect(result.cliffTileMap).toBe(layer.cliffTileMap);
     expect(result.groundTileMap).toBe(layer.groundTileMap);
   });
 
@@ -78,14 +71,13 @@ describe("getTileMaps", () => {
     const result = getTileMaps(layer);
     expect(result.treeTileMap).toBeNull();
     expect(result.waterTileMap).toBeNull();
-    expect(result.cliffTileMap).toBeNull();
     expect(result.groundTileMap).toBeNull();
   });
 
-  it("should only contain the four tile map keys", () => {
+  it("should only contain the three tile map keys", () => {
     const layer = createLayer("layer-0", "Base", 0);
     const result = getTileMaps(layer);
-    expect(Object.keys(result)).toEqual(["treeTileMap", "waterTileMap", "cliffTileMap", "groundTileMap"]);
+    expect(Object.keys(result)).toEqual(["treeTileMap", "waterTileMap", "groundTileMap"]);
   });
 });
 
