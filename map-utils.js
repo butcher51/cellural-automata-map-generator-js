@@ -44,6 +44,30 @@ export function getCellsInBrushArea(centerX, centerY, brushSize, mapSize) {
   return cells;
 }
 
+// Get all cells in a rectangular brush area (width × height)
+// Returns array of {x, y} coordinates within brush area and map bounds
+// Brush is centered on (centerX, centerY)
+export function getCellsInRectBrushArea(centerX, centerY, width, height, mapSize) {
+  const cells = [];
+  const halfW = Math.floor(width / 2);
+  const halfH = Math.floor(height / 2);
+
+  const startX = centerX - halfW;
+  const startY = centerY - halfH;
+  const endX = startX + width;
+  const endY = startY + height;
+
+  for (let y = startY; y < endY; y++) {
+    for (let x = startX; x < endX; x++) {
+      if (x >= 0 && x < mapSize && y >= 0 && y < mapSize) {
+        cells.push({ x, y });
+      }
+    }
+  }
+
+  return cells;
+}
+
 // Get all cells in a brush area expanded by a border width
 // Returns cells within (brushSize + 2*borderWidth) x (brushSize + 2*borderWidth) area
 // Used for clearing trees in a border around water painting

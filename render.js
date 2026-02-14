@@ -32,7 +32,7 @@ export function render(layers, drawMap, ctx, boxSize, numberSprite, tileMapSprit
           layerSpriteY = layer.groundTileMap[y][x].spritePosition.spriteY;
         }
 
-        // Check for tree/water overrides
+        // Check for tree/water/cliff overrides
         let hasOverride = false;
 
         const treeTile = layer.treeTileMap?.[y]?.[x];
@@ -46,6 +46,13 @@ export function render(layers, drawMap, ctx, boxSize, numberSprite, tileMapSprit
         if (waterTile && waterTile.tile !== 0) {
           layerSpriteX = waterTile.spritePosition.spriteX;
           layerSpriteY = waterTile.spritePosition.spriteY;
+          hasOverride = true;
+        }
+
+        const cliffTile = layer.cliffTileMap?.[y]?.[x];
+        if (cliffTile && cliffTile.tileIndex) {
+          layerSpriteX = cliffTile.spritePosition.spriteX;
+          layerSpriteY = cliffTile.spritePosition.spriteY;
           hasOverride = true;
         }
 
