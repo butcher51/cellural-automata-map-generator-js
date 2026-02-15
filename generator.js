@@ -1,6 +1,6 @@
 import { cleanupCliffArtifacts } from "./cleanupCliffArtifacts.js";
 import { cleanupWaterArtifacts } from "./cleanupWaterArtifacts.js";
-import { BACKGROUND_COLOR, BOX_SIZE, CAMERA_SPEED, ZOOM as DEFAULT_ZOOM, ITERATIONS, MAP_SIZE, SEED, setSeed } from "./constants.js";
+import { BACKGROUND_COLOR, BOX_SIZE, CAMERA_SPEED, ZOOM as DEFAULT_ZOOM, ITERATIONS, MAP_SIZE, setSeed } from "./constants.js";
 import { generateCliffTileMap } from "./generateCliffTileMap.js";
 import { generateCliffValueMap } from "./generateCliffValueMap.js";
 import { generateDrawMap } from "./generateDrawMap.js";
@@ -9,11 +9,20 @@ import { generateTreeTileMap } from "./generateTreeTileMap.js";
 import { generateWaterTileMap } from "./generateWaterTileMap.js";
 import { generateWaterValueMap } from "./generateWaterValueMap.js";
 import { createLayer } from "./layer.js";
-import { applyOrganicIterations, clampCamera, clearDrawingFlags, generateNoiseMap, getCellsInBrushArea, getCellsInRectBrushArea, pixelToGridCoordinate, setCellValue, updateCamera } from "./map-utils.js";
+import {
+  applyOrganicIterations,
+  clampCamera,
+  clearDrawingFlags,
+  generateNoiseMap,
+  getCellsInBrushArea,
+  getCellsInRectBrushArea,
+  pixelToGridCoordinate,
+  setCellValue,
+  updateCamera,
+} from "./map-utils.js";
 import { paintCellAtPosition } from "./paintCellAtPosition.js";
 import { render } from "./render.js";
 import { syncLayerStack } from "./syncLayerStack.js";
-import { isTreeTool } from "./treeTileConstants.js";
 import { initZoomPrevention } from "./zoomPrevention.js";
 
 // State for drag-to-paint interaction
@@ -246,7 +255,7 @@ baseLayer.cliffValueMap = generateCliffValueMap();
 
 baseLayer.cliffTileMap = generateCliffTileMap(baseLayer.cliffValueMap, baseLayer.cliffTileMap || []);
 
-baseLayer.treeTileMap = generateTreeTileMap(baseLayer.treeValueMap);
+//baseLayer.treeTileMap = generateTreeTileMap(baseLayer.treeValueMap);
 
 layers.push(baseLayer);
 

@@ -134,8 +134,7 @@ export function findThreeByFiveGroups(valueMap) {
   for (let y = 0; y <= height - 5; y++) {
     for (let x = 0; x <= width - 3; x++) {
       // Check validity and mark if overlap is not 1-2 cells
-      if (has3x5BlockAt(markedMap, x, y) &&
-          !hasOverlapWithMarkedCells(markedMap, x, y)) {
+      if (has3x5BlockAt(markedMap, x, y) && !hasOverlapWithMarkedCells(markedMap, x, y)) {
         mark3x5Block(markedMap, x, y);
       }
     }
