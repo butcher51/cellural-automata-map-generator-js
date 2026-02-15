@@ -3,17 +3,51 @@ import { getRandomTile } from "./getRandomTile.js";
 import { getTileSpritePosition } from "./getTileSpritePosition.js";
 import { createRandom } from "./seed.js";
 
+/*
+// gray cliff
+export const CLIFF_BORDER_TOP = 185;
+export const CLIFF_BORDER_RIGHT = 285;
+export const CLIFF_BORDER_LEFT = 280;
+
+// Surface outside corners (convex)
+export const CLIFF_BORDER_CORNER_TOP_LEFT = 184;
+export const CLIFF_BORDER_CORNER_TOP_RIGHT = 186;
+
+// Surface inside corners (concave)
+export const CLIFF_BORDER_INSIDE_TOP_LEFT = 187;
+export const CLIFF_BORDER_INSIDE_TOP_RIGHT = 189;
+
+export const CLIFF_BORDER_INSIDE_BOTTOM_LEFT_TOP = 256;
+export const CLIFF_BORDER_INSIDE_BOTTOM_RIGHT_TOP = 261;
+export const CLIFF_BORDER_INSIDE_BOTTOM_LEFT_MID = 280;
+export const CLIFF_BORDER_INSIDE_BOTTOM_RIGHT_MID = 285;
+
+// Wall tiles: 3 rows (top, mid, bottom) × 3 variants (left, center, right)
+// Wall top row (distFromBottom = 2)
+export const CLIFF_WALL_TOP_LEFT = 304;
+export const CLIFF_WALL_TOP_CENTER = 305;
+export const CLIFF_WALL_TOP_RIGHT = 309;
+
+// Wall middle row (distFromBottom = 1)
+export const CLIFF_WALL_MID_LEFT = 328;
+export const CLIFF_WALL_MID_CENTER = 329;
+export const CLIFF_WALL_MID_RIGHT = 333;
+
+// Wall bottom row (distFromBottom = 0)
+export const CLIFF_WALL_BOTTOM_LEFT = 352;
+export const CLIFF_WALL_BOTTOM_CENTER = 353;
+export const CLIFF_WALL_BOTTOM_RIGHT = 357;
+*/
+
+// braun
 // Surface edge tiles (same as old cliff implementation)
 export const CLIFF_BORDER_TOP = 201;
 export const CLIFF_BORDER_RIGHT = 251;
-//export const CLIFF_BORDER_BOTTOM = 297;
 export const CLIFF_BORDER_LEFT = 247;
 
 // Surface outside corners (convex)
 export const CLIFF_BORDER_CORNER_TOP_LEFT = 200;
 export const CLIFF_BORDER_CORNER_TOP_RIGHT = 202;
-// export const CLIFF_BORDER_CORNER_BOTTOM_LEFT = 296;
-// export const CLIFF_BORDER_CORNER_BOTTOM_RIGHT = 298;
 
 // Surface inside corners (concave)
 export const CLIFF_BORDER_INSIDE_TOP_LEFT = 224;
@@ -23,8 +57,6 @@ export const CLIFF_BORDER_INSIDE_BOTTOM_LEFT_TOP = 11;
 export const CLIFF_BORDER_INSIDE_BOTTOM_RIGHT_TOP = 17;
 export const CLIFF_BORDER_INSIDE_BOTTOM_LEFT_MID = 35;
 export const CLIFF_BORDER_INSIDE_BOTTOM_RIGHT_MID = 41;
-// export const CLIFF_BORDER_INSIDE_BOTTOM_LEFT_BOTTOM = 59;
-// export const CLIFF_BORDER_INSIDE_BOTTOM_RIGHT_BOTTOM = 65;
 
 // Wall tiles: 3 rows (top, mid, bottom) × 3 variants (left, center, right)
 // Wall top row (distFromBottom = 2)
@@ -113,10 +145,10 @@ function getCliffSurfaceTile(valueMap, x, y, existingTileMap, random) {
   if (bottomLeftTop && !top && !right && !bottomTop && bottomLeftTop && bottomMid) return CLIFF_WALL_MID_LEFT;
 
   if (bottomLeftBottom && !bottomLeftMid && !left && !right && !top && !bottomMid && !bottomBottom) return CLIFF_BORDER_INSIDE_BOTTOM_LEFT_TOP;
-  if (bottomLeftMid && !left && !right && !top && !bottomMid && !bottomBottom) return CLIFF_BORDER_INSIDE_BOTTOM_LEFT_MID;
+  if (bottomLeftMid && !left && !right && !top && !bottomMid && !bottomBottom && !bottomTop) return CLIFF_BORDER_INSIDE_BOTTOM_LEFT_MID;
 
   if (bottomRightBottom && !bottomRightMid && !left && !right && !top && !bottomMid && !bottomBottom) return CLIFF_BORDER_INSIDE_BOTTOM_RIGHT_TOP;
-  if (bottomRightMid && !left && !right && !top && !bottomMid && !bottomBottom) return CLIFF_BORDER_INSIDE_BOTTOM_RIGHT_MID;
+  if (bottomRightMid && !left && !right && !top && !bottomMid && !bottomBottom && !bottomTop) return CLIFF_BORDER_INSIDE_BOTTOM_RIGHT_MID;
 
   if (!top && !topRight && !right && !bottomTop && !bottomMid && bottomLeftMid && bottomLeftBottom && bottomBottom) return CLIFF_WALL_TOP_LEFT;
   if (!top && !topLeft && !left && !bottomTop && !bottomMid && bottomRightMid && bottomRightBottom && bottomBottom) return CLIFF_WALL_TOP_RIGHT;

@@ -255,7 +255,7 @@ baseLayer.cliffValueMap = generateCliffValueMap();
 
 baseLayer.cliffTileMap = generateCliffTileMap(baseLayer.cliffValueMap, baseLayer.cliffTileMap || []);
 
-//baseLayer.treeTileMap = generateTreeTileMap(baseLayer.treeValueMap);
+baseLayer.treeTileMap = generateTreeTileMap(baseLayer.treeValueMap);
 
 layers.push(baseLayer);
 

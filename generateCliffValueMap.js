@@ -9,7 +9,7 @@ export function generateCliffValueMap() {
     }
   }
 
-  addT(map, 10, 10);
+  // addT(map, 10, 10);
 
   return map;
 }
