@@ -25,7 +25,10 @@ export const WATER_INTERIOR_TILES = [
   { index: 841, chance: 1 },
   { index: 847, chance: 0.5 },
   { index: 855, chance: 0.1 },
-  { index: 857, chance: 0.1 },
+  { index: 856, chance: 0.05 },
+  { index: 859, chance: 0.01 },
+  { index: 860, chance: 0.01 },
+  { index: 861, chance: 0.1 },
 ];
 
 // Grouped exports for convenience
