@@ -57,8 +57,10 @@ function touchesBoundary(hole, width, height) {
 function isSmallerThan3x3(hole) {
   if (hole.length === 0) return false;
 
-  let minX = Infinity, maxX = -Infinity;
-  let minY = Infinity, maxY = -Infinity;
+  let minX = Infinity,
+    maxX = -Infinity;
+  let minY = Infinity,
+    maxY = -Infinity;
 
   for (const { x, y } of hole) {
     minX = Math.min(minX, x);
@@ -97,7 +99,7 @@ function fillSmallHoles(valueMap) {
   const width = valueMap[0]?.length || 0;
 
   // Deep copy to avoid mutation
-  const filledMap = valueMap.map(row => row.map(cell => ({ ...cell })));
+  const filledMap = valueMap.map((row) => row.map((cell) => ({ ...cell })));
 
   const visited = new Set();
 
