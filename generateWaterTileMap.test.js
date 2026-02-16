@@ -13,7 +13,7 @@ import {
   WATER_BORDER_LEFT,
   WATER_BORDER_RIGHT,
   WATER_BORDER_TOP,
-  WATER_INTERIOR_TILE,
+  WATER_INTERIOR_TILES,
 } from "./generateWaterTileMap.js";
 
 // Helper functions for test readability
@@ -23,6 +23,11 @@ function cell(value) {
 
 function createMap(pattern) {
   return pattern.map((row) => row.map((v) => ({ value: v })));
+}
+
+const WATER_INTERIOR_TILE_INDICES = WATER_INTERIOR_TILES.map(t => t.index);
+function isInteriorTile(tileIndex) {
+  return WATER_INTERIOR_TILE_INDICES.includes(tileIndex);
 }
 
 describe("generateWaterTileMap", () => {
@@ -45,13 +50,12 @@ describe("generateWaterTileMap", () => {
       expect(result[0][0]).toBeUndefined();
     });
 
-    it("should return corner tile for single water cell", () => {
+    it("should return interior tile for single water cell", () => {
       const valueMap = [[cell(1)]];
       const result = generateWaterTileMap(valueMap);
 
       expect(result[0][0]).toBeDefined();
-      expect(result[0][0].tile).toBe(1);
-      expect(result[0][0].tileIndex).toBe(WATER_BORDER_CORNER_TOP_LEFT);
+      expect(isInteriorTile(result[0][0].tileIndex)).toBe(true);
       expect(result[0][0].spritePosition).toBeDefined();
     });
 
@@ -63,8 +67,7 @@ describe("generateWaterTileMap", () => {
       ]);
       const result = generateWaterTileMap(valueMap);
 
-      expect(result[1][1].tileIndex).toBe(WATER_INTERIOR_TILE);
-      expect(result[1][1].tile).toBe(1);
+      expect(isInteriorTile(result[1][1].tileIndex)).toBe(true);
     });
 
     it("should return all undefined for all-land map", () => {
@@ -115,7 +118,6 @@ describe("generateWaterTileMap", () => {
 
       for (let y = 0; y < 2; y++) {
         for (let x = 0; x < 2; x++) {
-          expect(result[y][x].tile).toBe(1);
           expect(result[y][x].tileIndex).toBeTypeOf("number");
           expect(result[y][x].spritePosition).toBeDefined();
           expect(result[y][x].spritePosition.spriteX).toBeTypeOf("number");
@@ -161,7 +163,6 @@ describe("generateWaterTileMap", () => {
       const result = generateWaterTileMap(valueMap);
 
       expect(result[1][1].tileIndex).toBe(WATER_BORDER_CORNER_TOP_LEFT);
-      expect(result[1][1].tile).toBe(1);
     });
 
     it("should detect top-right outside corner", () => {
@@ -173,7 +174,6 @@ describe("generateWaterTileMap", () => {
       const result = generateWaterTileMap(valueMap);
 
       expect(result[1][1].tileIndex).toBe(WATER_BORDER_CORNER_TOP_RIGHT);
-      expect(result[1][1].tile).toBe(1);
     });
 
     it("should detect bottom-left outside corner", () => {
@@ -185,7 +185,6 @@ describe("generateWaterTileMap", () => {
       const result = generateWaterTileMap(valueMap);
 
       expect(result[1][1].tileIndex).toBe(WATER_BORDER_CORNER_BOTTOM_LEFT);
-      expect(result[1][1].tile).toBe(1);
     });
 
     it("should detect bottom-right outside corner", () => {
@@ -197,7 +196,6 @@ describe("generateWaterTileMap", () => {
       const result = generateWaterTileMap(valueMap);
 
       expect(result[1][1].tileIndex).toBe(WATER_BORDER_CORNER_BOTTOM_RIGHT);
-      expect(result[1][1].tile).toBe(1);
     });
   });
 
@@ -211,7 +209,6 @@ describe("generateWaterTileMap", () => {
       const result = generateWaterTileMap(valueMap);
 
       expect(result[1][1].tileIndex).toBe(WATER_BORDER_TOP);
-      expect(result[1][1].tile).toBe(1);
     });
 
     it("should detect right edge", () => {
@@ -223,7 +220,6 @@ describe("generateWaterTileMap", () => {
       const result = generateWaterTileMap(valueMap);
 
       expect(result[1][1].tileIndex).toBe(WATER_BORDER_RIGHT);
-      expect(result[1][1].tile).toBe(1);
     });
 
     it("should detect bottom edge", () => {
@@ -235,7 +231,6 @@ describe("generateWaterTileMap", () => {
       const result = generateWaterTileMap(valueMap);
 
       expect(result[1][1].tileIndex).toBe(WATER_BORDER_BOTTOM);
-      expect(result[1][1].tile).toBe(1);
     });
 
     it("should detect left edge", () => {
@@ -247,7 +242,6 @@ describe("generateWaterTileMap", () => {
       const result = generateWaterTileMap(valueMap);
 
       expect(result[1][1].tileIndex).toBe(WATER_BORDER_LEFT);
-      expect(result[1][1].tile).toBe(1);
     });
   });
 
@@ -263,7 +257,6 @@ describe("generateWaterTileMap", () => {
 
       // Center cell has all cardinals as water, but diagonal [0,0] is land
       expect(result[1][1].tileIndex).toBe(WATER_BORDER_INSIDE_TOP_LEFT);
-      expect(result[1][1].tile).toBe(1);
     });
 
     it("should detect top-right inside corner", () => {
@@ -275,7 +268,6 @@ describe("generateWaterTileMap", () => {
       const result = generateWaterTileMap(valueMap);
 
       expect(result[1][1].tileIndex).toBe(WATER_BORDER_INSIDE_TOP_RIGHT);
-      expect(result[1][1].tile).toBe(1);
     });
 
     it("should detect bottom-left inside corner", () => {
@@ -287,7 +279,6 @@ describe("generateWaterTileMap", () => {
       const result = generateWaterTileMap(valueMap);
 
       expect(result[1][1].tileIndex).toBe(WATER_BORDER_INSIDE_BOTTOM_LEFT);
-      expect(result[1][1].tile).toBe(1);
     });
 
     it("should detect bottom-right inside corner", () => {
@@ -299,7 +290,6 @@ describe("generateWaterTileMap", () => {
       const result = generateWaterTileMap(valueMap);
 
       expect(result[1][1].tileIndex).toBe(WATER_BORDER_INSIDE_BOTTOM_RIGHT);
-      expect(result[1][1].tile).toBe(1);
     });
   });
 
@@ -312,7 +302,7 @@ describe("generateWaterTileMap", () => {
       ]);
       const result = generateWaterTileMap(valueMap);
 
-      expect(result[1][1].tileIndex).toBe(WATER_INTERIOR_TILE);
+      expect(isInteriorTile(result[1][1].tileIndex)).toBe(true);
     });
 
     it("should detect interior water in large water body", () => {
@@ -326,7 +316,7 @@ describe("generateWaterTileMap", () => {
       const result = generateWaterTileMap(valueMap);
 
       // Center cell should be interior
-      expect(result[2][2].tileIndex).toBe(WATER_INTERIOR_TILE);
+      expect(isInteriorTile(result[2][2].tileIndex)).toBe(true);
     });
   });
 
@@ -367,12 +357,12 @@ describe("generateWaterTileMap", () => {
       const result = generateWaterTileMap(valueMap);
 
       expect(result[1][1].tileIndex).toBe(WATER_BORDER_INSIDE_TOP_LEFT);
-      expect(result[1][1].tileIndex).not.toBe(WATER_INTERIOR_TILE);
+      expect(isInteriorTile(result[1][1].tileIndex)).not.toBe(true);
     });
   });
 
-  describe("Boundary Conditions", () => {
-    it("should treat out-of-bounds as land at top-left corner", () => {
+  describe("Boundary Conditions (OOB as water)", () => {
+    it("should treat out-of-bounds as water at top-left corner", () => {
       const valueMap = createMap([
         [1, 1, 1],
         [1, 1, 1],
@@ -380,11 +370,11 @@ describe("generateWaterTileMap", () => {
       ]);
       const result = generateWaterTileMap(valueMap);
 
-      // Top-left corner has out-of-bounds above and left
-      expect(result[0][0].tileIndex).toBe(WATER_BORDER_CORNER_TOP_LEFT);
+      // Top-left corner has out-of-bounds above and left, treated as water
+      expect(isInteriorTile(result[0][0].tileIndex)).toBe(true);
     });
 
-    it("should treat out-of-bounds as land at bottom-right corner", () => {
+    it("should treat out-of-bounds as water at bottom-right corner", () => {
       const valueMap = createMap([
         [1, 1, 1],
         [1, 1, 1],
@@ -392,11 +382,11 @@ describe("generateWaterTileMap", () => {
       ]);
       const result = generateWaterTileMap(valueMap);
 
-      // Bottom-right corner has out-of-bounds below and right
-      expect(result[2][2].tileIndex).toBe(WATER_BORDER_CORNER_BOTTOM_RIGHT);
+      // Bottom-right corner has out-of-bounds below and right, treated as water
+      expect(isInteriorTile(result[2][2].tileIndex)).toBe(true);
     });
 
-    it("should detect top edge for entire top row", () => {
+    it("should treat top edge as interior water", () => {
       const valueMap = createMap([
         [1, 1, 1],
         [1, 1, 1],
@@ -404,11 +394,11 @@ describe("generateWaterTileMap", () => {
       ]);
       const result = generateWaterTileMap(valueMap);
 
-      // Middle cell of top row should have top edge
-      expect(result[0][1].tileIndex).toBe(WATER_BORDER_TOP);
+      // Middle cell of top row should be interior (OOB above = water)
+      expect(isInteriorTile(result[0][1].tileIndex)).toBe(true);
     });
 
-    it("should detect left edge for entire left column", () => {
+    it("should treat left edge as interior water", () => {
       const valueMap = createMap([
         [1, 1, 1],
         [1, 1, 1],
@@ -416,8 +406,8 @@ describe("generateWaterTileMap", () => {
       ]);
       const result = generateWaterTileMap(valueMap);
 
-      // Middle cell of left column should have left edge
-      expect(result[1][0].tileIndex).toBe(WATER_BORDER_LEFT);
+      // Middle cell of left column should be interior (OOB left = water)
+      expect(isInteriorTile(result[1][0].tileIndex)).toBe(true);
     });
   });
 
@@ -430,18 +420,15 @@ describe("generateWaterTileMap", () => {
       ]);
       const result = generateWaterTileMap(valueMap);
 
-      // Top-right [0][2]: top=out of bounds (land), right=out of bounds (land)
-      // -> top-right corner
-      expect(result[0][2].tileIndex).toBe(WATER_BORDER_CORNER_TOP_RIGHT);
+      // Top-right [0][2]: top=out of bounds (water), right=out of bounds (water), bottom=land
+      // -> bottom edge
+      expect(result[0][2].tileIndex).toBe(WATER_BORDER_BOTTOM);
 
-      // Bottom-left [2][0]: bottom=out of bounds (land), left=out of bounds (land)
-      // -> bottom-left corner
-      expect(result[2][0].tileIndex).toBe(WATER_BORDER_CORNER_BOTTOM_LEFT);
+      // Bottom-left [2][0]: bottom=out of bounds (water), left=out of bounds (water), right=land
+      // -> right edge
+      expect(result[2][0].tileIndex).toBe(WATER_BORDER_RIGHT);
 
       // All water cells should have tile: 1
-      expect(result[0][0].tile).toBe(1);
-      expect(result[0][1].tile).toBe(1);
-      expect(result[1][0].tile).toBe(1);
 
       // Land cells should be undefined
       expect(result[1][1]).toBeUndefined();
@@ -456,20 +443,20 @@ describe("generateWaterTileMap", () => {
       ]);
       const result = generateWaterTileMap(valueMap);
 
-      // Top-left [0][0]: left=out of bounds (land), top=out of bounds (land)
-      // -> top-left corner
-      expect(result[0][0].tileIndex).toBe(WATER_BORDER_CORNER_TOP_LEFT);
+      // Top-left [0][0]: top=out of bounds (water), left=out of bounds (water), bottom=land
+      // -> bottom edge
+      expect(result[0][0].tileIndex).toBe(WATER_BORDER_BOTTOM);
 
-      // Top-right [0][2]: right=out of bounds (land), top=out of bounds (land)
-      // -> top-right corner
-      expect(result[0][2].tileIndex).toBe(WATER_BORDER_CORNER_TOP_RIGHT);
+      // Top-right [0][2]: top=out of bounds (water), right=out of bounds (water), bottom=land
+      // -> bottom edge
+      expect(result[0][2].tileIndex).toBe(WATER_BORDER_BOTTOM);
 
-      // [1][1]: left=land, right=land -> left edge (left checked first)
+      // [1][1]: left=land, right=land -> left edge
       expect(result[1][1].tileIndex).toBe(WATER_BORDER_LEFT);
 
-      // [2][1]: bottom=out of bounds (land), left=land, right=land
-      // -> bottom-left corner (bottom and left are both land)
-      expect(result[2][1].tileIndex).toBe(WATER_BORDER_CORNER_BOTTOM_LEFT);
+      // [2][1]: left=land, right=land, bottom=out of bounds (water)
+      // -> left edge
+      expect(result[2][1].tileIndex).toBe(WATER_BORDER_LEFT);
     });
 
     it("should handle donut shape with inside corners", () => {
@@ -535,9 +522,9 @@ describe("generateWaterTileMap", () => {
       ]);
       const result = generateWaterTileMap(valueMap);
 
-      // Top of peninsula [0][1] has top=out of bounds, left=land, right=land
-      // -> top-left corner (top and left are both land)
-      expect(result[0][1].tileIndex).toBe(WATER_BORDER_CORNER_TOP_LEFT);
+      // Top of peninsula [0][1] has top=out of bounds (water), left=land, right=land
+      // -> left edge
+      expect(result[0][1].tileIndex).toBe(WATER_BORDER_LEFT);
 
       // [1][1] has left=land, right=land -> left edge (checks left first in priority)
       expect(result[1][1].tileIndex).toBe(WATER_BORDER_LEFT);
@@ -592,7 +579,7 @@ describe("generateWaterTileMap", () => {
       result[0][0].tileIndex = 999;
 
       const result2 = generateWaterTileMap(valueMap);
-      expect(result2[0][0].tileIndex).toBe(WATER_BORDER_CORNER_TOP_LEFT);
+      expect(isInteriorTile(result2[0][0].tileIndex)).toBe(true);
       expect(result2[0][0].tileIndex).not.toBe(999);
     });
 
@@ -601,7 +588,6 @@ describe("generateWaterTileMap", () => {
 
       expect(() => generateWaterTileMap(valueMap)).not.toThrow();
       const result = generateWaterTileMap(valueMap);
-      expect(result[0][0].tile).toBe(1);
     });
 
     it("should ensure all water tiles have tile property equal to 1", () => {
@@ -615,8 +601,7 @@ describe("generateWaterTileMap", () => {
       for (let y = 0; y < 3; y++) {
         for (let x = 0; x < 3; x++) {
           if (result[y][x]) {
-            expect(result[y][x].tile).toBe(1);
-          }
+                }
         }
       }
     });

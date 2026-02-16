@@ -43,7 +43,7 @@ function getWaterBorderTile(valueMap, x, y, existingTileMap, random) {
   // Helper to check if neighbor is NOT water (is land or out of bounds)
   const isLand = (nx, ny) => {
     if (nx < 0 || nx >= width || ny < 0 || ny >= height) {
-      return true;
+      return false;
     }
     return valueMap[ny]?.[nx]?.value !== 1;
   };
@@ -130,7 +130,7 @@ function getWaterBorderTile(valueMap, x, y, existingTileMap, random) {
     return WATER_BORDER_INSIDE_BOTTOM_RIGHT;
   }
 
-  if (existingTileMap[y][x] && existingTileMap[y][x].tileIndex && WATER_INTERIOR_TILES.find((t) => t.index === existingTileMap[y][x].tileIndex)) {
+  if (existingTileMap?.[y]?.[x]?.tileIndex && WATER_INTERIOR_TILES.find((t) => t.index === existingTileMap[y][x].tileIndex)) {
     return existingTileMap[y][x].tileIndex;
   }
   // Interior tile (no borders)

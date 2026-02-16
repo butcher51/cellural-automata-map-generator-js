@@ -114,7 +114,7 @@ function getCliffSurfaceTile(valueMap, x, y, existingTileMap, random) {
 
   const isLand = (nx, ny) => {
     if (nx < 0 || nx >= width || ny < 0 || ny >= height) {
-      return true;
+      return false;
     }
     return valueMap[ny]?.[nx]?.value !== 1;
   };
@@ -183,7 +183,7 @@ function getCliffSurfaceTile(valueMap, x, y, existingTileMap, random) {
   if (bottomLeftTop) return CLIFF_BORDER_INSIDE_BOTTOM_LEFT_TOP;
   if (bottomRightTop) return CLIFF_BORDER_INSIDE_BOTTOM_RIGHT_TOP;
 
-  if (existingTileMap[y] && existingTileMap[y][x] && existingTileMap[y][x].tileIndex && GROUND_TILES.find((t) => t.index === existingTileMap[y][x].tileIndex)) {
+  if (existingTileMap?.[y]?.[x]?.tileIndex && GROUND_TILES.find((t) => t.index === existingTileMap[y][x].tileIndex)) {
     return existingTileMap[y][x].tileIndex;
   }
   // Interior tile

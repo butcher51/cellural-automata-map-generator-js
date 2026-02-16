@@ -403,8 +403,8 @@ describe("getCliffInteriorCells", () => {
         [6, 199],
       ]);
       const result = getCliffInteriorCells(map);
-      // Near bottom edge = treated as border
-      expect(result).not.toContainEqual({ x: 5, y: 197 });
+      // Near bottom edge = OOB treated as cliff, so cell is interior
+      expect(result).toContainEqual({ x: 5, y: 197 });
     });
   });
 });
