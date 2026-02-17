@@ -13,9 +13,11 @@ export function createLayer(id, name, order) {
     treeValueMap: null,
     waterValueMap: null,
     cliffValueMap: null,
+    pineValueMap: null,
     treeTileMap: null,
     waterTileMap: null,
     cliffTileMap: null,
+    pineTileMap: null,
     groundTileMap: null,
   };
 }
@@ -23,26 +25,28 @@ export function createLayer(id, name, order) {
 /**
  * Extracts value maps from a layer.
  * @param {object} layer
- * @returns {{ treeValueMap, waterValueMap, cliffValueMap }}
+ * @returns {{ treeValueMap, waterValueMap, cliffValueMap, pineValueMap }}
  */
 export function getValueMaps(layer) {
   return {
     treeValueMap: layer.treeValueMap,
     waterValueMap: layer.waterValueMap,
     cliffValueMap: layer.cliffValueMap,
+    pineValueMap: layer.pineValueMap,
   };
 }
 
 /**
  * Extracts tile maps from a layer.
  * @param {object} layer
- * @returns {{ treeTileMap, waterTileMap, cliffTileMap, groundTileMap }}
+ * @returns {{ treeTileMap, waterTileMap, cliffTileMap, pineTileMap, groundTileMap }}
  */
 export function getTileMaps(layer) {
   return {
     treeTileMap: layer.treeTileMap,
     waterTileMap: layer.waterTileMap,
     cliffTileMap: layer.cliffTileMap,
+    pineTileMap: layer.pineTileMap,
     groundTileMap: layer.groundTileMap,
   };
 }

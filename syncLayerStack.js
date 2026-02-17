@@ -5,6 +5,7 @@ import { generateCliffValueMap } from "./generateCliffValueMap.js";
 import { generateEmptyValueMap } from "./generateEmptyValueMap.js";
 import { generateSparseGroundTileMap } from "./generateSparseGroundTileMap.js";
 import { generateTreeTileMap } from "./generateTreeTileMap.js";
+import { generatePineTileMap } from "./generatePineTileMap.js";
 import { generateWaterTileMap } from "./generateWaterTileMap.js";
 import { generateWaterValueMap } from "./generateWaterValueMap.js";
 import { getCliffInteriorCells } from "./getCliffInteriorCells.js";
@@ -43,6 +44,9 @@ function syncFromLayer(layers, layerIndex) {
         for (let x = 0; x < mapSize; x++) {
           if (existingLayer.groundTileMap[y]?.[x] == null) {
             existingLayer.treeValueMap[y][x].value = 1; // No trees
+            if (existingLayer.pineValueMap && existingLayer.pineValueMap[y]?.[x]) {
+              existingLayer.pineValueMap[y][x].value = 1; // No pines
+            }
             existingLayer.waterValueMap[y][x].value = 0; // No water
             existingLayer.cliffValueMap[y][x].value = 0; // No cliff
           }
@@ -53,6 +57,9 @@ function syncFromLayer(layers, layerIndex) {
       existingLayer.cliffTileMap = generateCliffTileMap(existingLayer.cliffValueMap, existingLayer.cliffTileMap || []);
       existingLayer.waterTileMap = generateWaterTileMap(existingLayer.waterValueMap, existingLayer.waterTileMap);
       existingLayer.treeTileMap = generateTreeTileMap(existingLayer.treeValueMap);
+      if (existingLayer.pineValueMap) {
+        existingLayer.pineTileMap = generatePineTileMap(existingLayer.pineValueMap);
+      }
 
       // RECURSE: Check if upper layer has cliffs with interior
       const upperInterior = getCliffInteriorCells(existingLayer.cliffValueMap);
@@ -69,9 +76,11 @@ function syncFromLayer(layers, layerIndex) {
       newLayer.cliffValueMap = generateCliffValueMap();
       newLayer.waterValueMap = generateWaterValueMap();
       newLayer.treeValueMap = generateEmptyValueMap(MAP_SIZE, 1); // All 1s = no trees
+      newLayer.pineValueMap = generateEmptyValueMap(MAP_SIZE, 1); // All 1s = no pines
 
       // Generate tile maps
       newLayer.treeTileMap = generateTreeTileMap(newLayer.treeValueMap);
+      newLayer.pineTileMap = generatePineTileMap(newLayer.pineValueMap);
       newLayer.cliffTileMap = generateCliffTileMap(newLayer.cliffValueMap, []);
       newLayer.waterTileMap = generateWaterTileMap(newLayer.waterValueMap, null);
 

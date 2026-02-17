@@ -1,10 +1,20 @@
 import { cleanupCliffArtifacts } from "./cleanupCliffArtifacts.js";
 import { cleanupWaterArtifacts } from "./cleanupWaterArtifacts.js";
-import { BACKGROUND_COLOR, BOX_SIZE, CAMERA_SPEED, ZOOM as DEFAULT_ZOOM, ITERATIONS, MAP_SIZE, setSeed } from "./constants.js";
+import {
+  BACKGROUND_COLOR,
+  BOX_SIZE,
+  CAMERA_SPEED,
+  ZOOM as DEFAULT_ZOOM,
+  ITERATIONS,
+  MAP_SIZE,
+  setSeed,
+} from "./constants.js";
 import { generateCliffTileMap } from "./generateCliffTileMap.js";
 import { generateCliffValueMap } from "./generateCliffValueMap.js";
 import { generateDrawMap } from "./generateDrawMap.js";
+import { generateEmptyValueMap } from "./generateEmptyValueMap.js";
 import { generateGroundTileMap } from "./generateGroundMap.js";
+import { generatePineTileMap } from "./generatePineTileMap.js";
 import { generateTreeTileMap } from "./generateTreeTileMap.js";
 import { generateWaterTileMap } from "./generateWaterTileMap.js";
 import { generateWaterValueMap } from "./generateWaterValueMap.js";
@@ -68,7 +78,11 @@ function updateCursorPreview(event) {
   const worldPixelY = pixelY + camera.y;
 
   // Convert to grid coordinates
-  const { x, y } = pixelToGridCoordinate(worldPixelX, worldPixelY, BOX_SIZE * zoom);
+  const { x, y } = pixelToGridCoordinate(
+    worldPixelX,
+    worldPixelY,
+    BOX_SIZE * zoom,
+  );
 
   // Validate bounds
   if (x < 0 || x >= MAP_SIZE || y < 0 || y >= MAP_SIZE) {
@@ -160,6 +174,53 @@ function clearWaterFromCliffs(waterValueMap, cliffValueMap) {
   return updatedWaterMap;
 }
 
+/**
+ * Clears pines from water regions and their borders
+ * @param {Array} pineValueMap - The pine value map
+ * @param {Array} waterValueMap - The validated water value map
+ * @returns {Array} Updated pine value map with pines cleared from water areas
+ */
+function clearPinesFromWater(pineValueMap, waterValueMap) {
+  const height = waterValueMap.length;
+  const width = waterValueMap[0]?.length || 0;
+
+  let updatedPineMap = pineValueMap;
+
+  for (let y = 0; y < height; y++) {
+    for (let x = 0; x < width; x++) {
+      // Clear pines where water exists
+      if (waterValueMap[y][x].value === 1) {
+        updatedPineMap = setCellValue(updatedPineMap, x, y, 1);
+      }
+    }
+  }
+
+  return updatedPineMap;
+}
+
+/**
+ * Clears pines from cliff regions
+ * @param {Array} pineValueMap - The pine value map
+ * @param {Array} cliffValueMap - The validated cliff value map
+ * @returns {Array} Updated pine value map with pines cleared from cliff areas
+ */
+function clearPinesFromCliffs(pineValueMap, cliffValueMap) {
+  const height = cliffValueMap.length;
+  const width = cliffValueMap[0]?.length || 0;
+
+  let updatedPineMap = pineValueMap;
+
+  for (let y = 0; y < height; y++) {
+    for (let x = 0; x < width; x++) {
+      if (cliffValueMap[y][x].value === 1) {
+        updatedPineMap = setCellValue(updatedPineMap, x, y, 1);
+      }
+    }
+  }
+
+  return updatedPineMap;
+}
+
 // Camera state
 let camera = {
   x: 0,
@@ -187,6 +248,7 @@ const tree1Button = document.getElementById("tree-1-tool");
 const tree2Button = document.getElementById("tree-2-tool");
 const tree3Button = document.getElementById("tree-3-tool");
 const tree4Button = document.getElementById("tree-4-tool");
+const pine1Button = document.getElementById("pine-1-tool");
 const waterToolButton = document.getElementById("water-tool");
 const cliffToolButton = document.getElementById("cliff-tool");
 const eraserToolButton = document.getElementById("eraser-tool");
@@ -198,6 +260,7 @@ function setActiveTool(tool) {
   tree2Button.classList.toggle("active", tool === "tree-2");
   tree3Button.classList.toggle("active", tool === "tree-3");
   tree4Button.classList.toggle("active", tool === "tree-4");
+  pine1Button.classList.toggle("active", tool === "pine-1");
   waterToolButton.classList.toggle("active", tool === "water");
   cliffToolButton.classList.toggle("active", tool === "cliff");
   eraserToolButton.classList.toggle("active", tool === "eraser");
@@ -207,13 +270,16 @@ tree1Button.addEventListener("click", () => setActiveTool("tree-1"));
 tree2Button.addEventListener("click", () => setActiveTool("tree-2"));
 tree3Button.addEventListener("click", () => setActiveTool("tree-3"));
 tree4Button.addEventListener("click", () => setActiveTool("tree-4"));
+pine1Button.addEventListener("click", () => setActiveTool("pine-1"));
 waterToolButton.addEventListener("click", () => setActiveTool("water"));
 cliffToolButton.addEventListener("click", () => setActiveTool("cliff"));
 eraserToolButton.addEventListener("click", () => setActiveTool("eraser"));
 
 // Helper function to get available canvas height
 function getCanvasHeight() {
-  const viewportHeight = window.visualViewport ? window.visualViewport.height : window.innerHeight;
+  const viewportHeight = window.visualViewport
+    ? window.visualViewport.height
+    : window.innerHeight;
   return viewportHeight - toolbar.offsetHeight;
 }
 
@@ -249,11 +315,21 @@ baseLayer.treeValueMap = applyOrganicIterations(generateNoiseMap(MAP_SIZE), 10);
 
 baseLayer.waterValueMap = generateWaterValueMap();
 
-baseLayer.waterTileMap = generateWaterTileMap(baseLayer.waterValueMap, baseLayer.waterTileMap);
+baseLayer.waterTileMap = generateWaterTileMap(
+  baseLayer.waterValueMap,
+  baseLayer.waterTileMap,
+);
 
 baseLayer.cliffValueMap = generateCliffValueMap();
 
-baseLayer.cliffTileMap = generateCliffTileMap(baseLayer.cliffValueMap, baseLayer.cliffTileMap || []);
+baseLayer.cliffTileMap = generateCliffTileMap(
+  baseLayer.cliffValueMap,
+  baseLayer.cliffTileMap || [],
+);
+
+baseLayer.pineValueMap = generateEmptyValueMap(MAP_SIZE, 1); // All 1s = no pines initially
+
+baseLayer.pineTileMap = generatePineTileMap(baseLayer.pineValueMap);
 
 baseLayer.treeTileMap = generateTreeTileMap(baseLayer.treeValueMap);
 
@@ -267,7 +343,8 @@ function updateLayerDebugPanel() {
   for (let i = 0; i < layers.length; i++) {
     const layer = layers[i];
     const entry = document.createElement("div");
-    entry.className = "layer-entry" + (i === strokeTargetLayerIndex ? " active" : "");
+    entry.className =
+      "layer-entry" + (i === strokeTargetLayerIndex ? " active" : "");
 
     const label = document.createElement("span");
     label.textContent = `${layer.name} (order: ${layer.order})`;
@@ -369,7 +446,7 @@ function handleMouseDown(event) {
 
   // Paint the initial cells with brush
   const layer = layers[strokeTargetLayerIndex];
-  paintCellAtPosition({
+  const result = paintCellAtPosition({
     canvas,
     currentTool,
     event,
@@ -377,11 +454,13 @@ function handleMouseDown(event) {
     treeValueMap: layer.treeValueMap,
     waterValueMap: layer.waterValueMap,
     cliffValueMap: layer.cliffValueMap,
+    pineValueMap: layer.pineValueMap,
     camera,
     zoom,
     paintedCellsInStroke,
     groundTileMap: layer.groundTileMap,
   });
+  layer.pineValueMap = result.pineValueMap;
 }
 
 // Handle mouse move to continue painting
@@ -406,7 +485,7 @@ function handleMouseMove(event) {
 
   // Paint using the stroke target layer
   const layer = layers[strokeTargetLayerIndex];
-  paintCellAtPosition({
+  const result = paintCellAtPosition({
     canvas,
     currentTool,
     event,
@@ -414,11 +493,13 @@ function handleMouseMove(event) {
     treeValueMap: layer.treeValueMap,
     waterValueMap: layer.waterValueMap,
     cliffValueMap: layer.cliffValueMap,
+    pineValueMap: layer.pineValueMap,
     camera,
     zoom,
     paintedCellsInStroke,
     groundTileMap: layer.groundTileMap,
   });
+  layer.pineValueMap = result.pineValueMap;
 }
 
 // Handle mouse up to finish painting and rerun iterations
@@ -442,23 +523,55 @@ function handleMouseUp(event) {
 
   // Process cliffs
   layer.cliffValueMap = cleanupCliffArtifacts(layer.cliffValueMap);
-  layer.cliffTileMap = generateCliffTileMap(layer.cliffValueMap, layer.cliffTileMap || []);
+  layer.cliffTileMap = generateCliffTileMap(
+    layer.cliffValueMap,
+    layer.cliffTileMap || [],
+  );
 
   // Process water
   layer.waterValueMap = cleanupWaterArtifacts(layer.waterValueMap);
-  layer.waterTileMap = generateWaterTileMap(layer.waterValueMap, layer.waterTileMap);
+  layer.waterTileMap = generateWaterTileMap(
+    layer.waterValueMap,
+    layer.waterTileMap,
+  );
 
   // Clear trees and water from cliff areas
-  layer.treeValueMap = clearTreesFromCliffs(layer.treeValueMap, layer.cliffValueMap);
-  layer.waterValueMap = clearWaterFromCliffs(layer.waterValueMap, layer.cliffValueMap);
-  layer.waterTileMap = generateWaterTileMap(layer.waterValueMap, layer.waterTileMap);
+  layer.treeValueMap = clearTreesFromCliffs(
+    layer.treeValueMap,
+    layer.cliffValueMap,
+  );
+  layer.waterValueMap = clearWaterFromCliffs(
+    layer.waterValueMap,
+    layer.cliffValueMap,
+  );
+  layer.waterTileMap = generateWaterTileMap(
+    layer.waterValueMap,
+    layer.waterTileMap,
+  );
 
   // Clear trees based on validated water
-  layer.treeValueMap = clearTreesFromWater(layer.treeValueMap, layer.waterValueMap);
+  layer.treeValueMap = clearTreesFromWater(
+    layer.treeValueMap,
+    layer.waterValueMap,
+  );
 
   // Finally process trees
   layer.treeValueMap = applyOrganicIterations(layer.treeValueMap, ITERATIONS);
   layer.treeTileMap = generateTreeTileMap(layer.treeValueMap);
+
+  // Clear pines from incompatible terrain
+  layer.pineValueMap = clearPinesFromCliffs(
+    layer.pineValueMap,
+    layer.cliffValueMap,
+  );
+  layer.pineValueMap = clearPinesFromWater(
+    layer.pineValueMap,
+    layer.waterValueMap,
+  );
+
+  // Process pines with organic iterations
+  layer.pineValueMap = applyOrganicIterations(layer.pineValueMap, ITERATIONS);
+  layer.pineTileMap = generatePineTileMap(layer.pineValueMap);
 
   // Sync layer stack
   layers = syncLayerStack(layers, strokeTargetLayerIndex);
@@ -527,8 +640,14 @@ function handleTouchMove(event) {
 
   if (event.touches.length === 2 && initialPinchDistance !== null) {
     // Two fingers: handle pinch zoom and pan
-    const currentDistance = getTouchDistance(event.touches[0], event.touches[1]);
-    const currentMidpoint = getTouchMidpoint(event.touches[0], event.touches[1]);
+    const currentDistance = getTouchDistance(
+      event.touches[0],
+      event.touches[1],
+    );
+    const currentMidpoint = getTouchMidpoint(
+      event.touches[0],
+      event.touches[1],
+    );
 
     // Calculate zoom based on pinch ratio
     const pinchRatio = currentDistance / initialPinchDistance;
@@ -644,11 +763,22 @@ function regenerateMap(newSeed) {
 
   const baseLayer = createLayer("layer-0", "Base Layer", 0);
   baseLayer.groundTileMap = generateGroundTileMap();
-  baseLayer.treeValueMap = applyOrganicIterations(generateNoiseMap(MAP_SIZE), 10);
+  baseLayer.treeValueMap = applyOrganicIterations(
+    generateNoiseMap(MAP_SIZE),
+    10,
+  );
   baseLayer.waterValueMap = generateWaterValueMap();
-  baseLayer.waterTileMap = generateWaterTileMap(baseLayer.waterValueMap, baseLayer.waterTileMap);
+  baseLayer.waterTileMap = generateWaterTileMap(
+    baseLayer.waterValueMap,
+    baseLayer.waterTileMap,
+  );
   baseLayer.cliffValueMap = generateCliffValueMap();
-  baseLayer.cliffTileMap = generateCliffTileMap(baseLayer.cliffValueMap, baseLayer.cliffTileMap || []);
+  baseLayer.cliffTileMap = generateCliffTileMap(
+    baseLayer.cliffValueMap,
+    baseLayer.cliffTileMap || [],
+  );
+  baseLayer.pineValueMap = generateEmptyValueMap(MAP_SIZE, 1); // All 1s = no pines initially
+  baseLayer.pineTileMap = generatePineTileMap(baseLayer.pineValueMap);
   baseLayer.treeTileMap = generateTreeTileMap(baseLayer.treeValueMap);
 
   layers = [baseLayer];
@@ -687,14 +817,31 @@ function animate() {
   camera = updateCamera(camera, keys, CAMERA_SPEED, zoom);
 
   // Clamp camera to map boundaries
-  camera = clampCamera(camera, MAP_SIZE, BOX_SIZE, zoom, canvas.width, canvas.height);
+  camera = clampCamera(
+    camera,
+    MAP_SIZE,
+    BOX_SIZE,
+    zoom,
+    canvas.width,
+    canvas.height,
+  );
 
   // Clear canvas with background color
   ctx.fillStyle = BACKGROUND_COLOR;
   ctx.fillRect(0, 0, canvas.width, canvas.height);
 
   // Render the map with sprite, camera offset, and zoom
-  render(layers, drawMap, ctx, BOX_SIZE, numberSprite, tileMapSprite, camera, zoom, cursorPreviewCells);
+  render(
+    layers,
+    drawMap,
+    ctx,
+    BOX_SIZE,
+    numberSprite,
+    tileMapSprite,
+    camera,
+    zoom,
+    cursorPreviewCells,
+  );
 
   requestAnimationFrame(animate);
 }

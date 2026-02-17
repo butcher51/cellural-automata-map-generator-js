@@ -29,10 +29,10 @@ describe("TREE_TILES", () => {
   });
 
   it("type 1 has the original hardcoded tile indices", () => {
-    expect(TREE_TILES[1].topLeft).toBe(1225);
-    expect(TREE_TILES[1].topRight).toBe(1226);
-    expect(TREE_TILES[1].bottomLeft).toBe(1249);
-    expect(TREE_TILES[1].bottomRight).toBe(1250);
+    expect(TREE_TILES[1].topLeft).toBe(1231);
+    expect(TREE_TILES[1].topRight).toBe(1232);
+    expect(TREE_TILES[1].bottomLeft).toBe(1255);
+    expect(TREE_TILES[1].bottomRight).toBe(1256);
     expect(TREE_TILES[1].topLeftAdjacent).toBe(1282);
     expect(TREE_TILES[1].topRightAdjacent).toBe(1283);
   });

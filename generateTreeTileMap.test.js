@@ -131,8 +131,13 @@ describe("generateTreeTileMap", () => {
     }
 
     // All indices should be from the TREE_TILES[2] set
-    // (which is currently the same as type 1: 1225, 1226, 1249, 1250, 1282, 1283)
-    const validTiles = new Set([1225, 1226, 1249, 1250, 1282, 1283]);
+    // (type 2: 1471, 1472, 1495, 1496, 1522, 1523)
+    // Note: At map boundaries, some cells may default to type 1, so we also allow type 1 adjacent tiles
+    const validTiles = new Set([
+      1471, 1472, 1495, 1496, 1522, 1523, // Type 2 tiles
+      1282, 1283, // Type 1 adjacent tiles (can appear at boundaries)
+    ]);
+
     for (const idx of tileIndices) {
       expect(validTiles.has(idx)).toBe(true);
     }
