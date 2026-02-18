@@ -314,6 +314,7 @@ baseLayer.groundTileMap = generateGroundTileMap();
 baseLayer.treeValueMap = applyOrganicIterations(generateNoiseMap(MAP_SIZE), 10);
 
 baseLayer.waterValueMap = generateWaterValueMap();
+baseLayer.waterValueMap = cleanupWaterArtifacts(baseLayer.waterValueMap);
 
 baseLayer.waterTileMap = generateWaterTileMap(
   baseLayer.waterValueMap,
@@ -328,6 +329,16 @@ baseLayer.cliffTileMap = generateCliffTileMap(
 );
 
 baseLayer.pineValueMap = generateEmptyValueMap(MAP_SIZE, 1); // All 1s = no pines initially
+
+// Clear trees and pines from water areas
+baseLayer.treeValueMap = clearTreesFromWater(
+  baseLayer.treeValueMap,
+  baseLayer.waterValueMap,
+);
+baseLayer.pineValueMap = clearPinesFromWater(
+  baseLayer.pineValueMap,
+  baseLayer.waterValueMap,
+);
 
 baseLayer.pineTileMap = generatePineTileMap(baseLayer.pineValueMap);
 
@@ -768,6 +779,7 @@ function regenerateMap(newSeed) {
     10,
   );
   baseLayer.waterValueMap = generateWaterValueMap();
+  baseLayer.waterValueMap = cleanupWaterArtifacts(baseLayer.waterValueMap);
   baseLayer.waterTileMap = generateWaterTileMap(
     baseLayer.waterValueMap,
     baseLayer.waterTileMap,
@@ -778,6 +790,17 @@ function regenerateMap(newSeed) {
     baseLayer.cliffTileMap || [],
   );
   baseLayer.pineValueMap = generateEmptyValueMap(MAP_SIZE, 1); // All 1s = no pines initially
+
+  // Clear trees and pines from water areas
+  baseLayer.treeValueMap = clearTreesFromWater(
+    baseLayer.treeValueMap,
+    baseLayer.waterValueMap,
+  );
+  baseLayer.pineValueMap = clearPinesFromWater(
+    baseLayer.pineValueMap,
+    baseLayer.waterValueMap,
+  );
+
   baseLayer.pineTileMap = generatePineTileMap(baseLayer.pineValueMap);
   baseLayer.treeTileMap = generateTreeTileMap(baseLayer.treeValueMap);
 

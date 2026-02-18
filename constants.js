@@ -21,6 +21,11 @@ export const ITERATIONS = 0;
 export const WALL_SURVIVAL_THRESHOLD = 4;
 export const FLOOR_TO_WALL_THRESHOLD = 5;
 
+// Lake generation parameters
+export const LAKE_NOISE_DENSITY = 0.48;
+export const LAKE_CA_ITERATIONS = 6;
+export const LAKE_SEED_OFFSET = 10000;
+
 export const BACKGROUND_COLOR = "#7e9432";
 
 export let SEED = 1;
