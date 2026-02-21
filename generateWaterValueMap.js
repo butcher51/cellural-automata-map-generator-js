@@ -1,16 +1,18 @@
 import {
   LAKE_CA_ITERATIONS,
-  LAKE_NOISE_DENSITY,
+  LAKE_CLUSTER_RADIUS,
+  LAKE_COUNT,
   LAKE_SEED_OFFSET,
   MAP_SIZE,
 } from "./constants.js";
-import { generateLakeNoiseMap } from "./generateLakeNoiseMap.js";
+import { generateClusteredLakeNoiseMap } from "./generateClusteredLakeNoiseMap.js";
 import { applyOrganicIterations } from "./map-utils.js";
 
 export function generateWaterValueMap() {
-  const noiseMap = generateLakeNoiseMap(
+  const noiseMap = generateClusteredLakeNoiseMap(
     MAP_SIZE,
-    LAKE_NOISE_DENSITY,
+    LAKE_COUNT,
+    LAKE_CLUSTER_RADIUS,
     LAKE_SEED_OFFSET,
   );
   const organicMap = applyOrganicIterations(noiseMap, LAKE_CA_ITERATIONS);

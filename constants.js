@@ -4,7 +4,7 @@
 export const BOX_SIZE = 8;
 
 // Grid dimensions (100x100 boxes = 10,000 boxes total)
-export const MAP_SIZE = 200;
+export const MAP_SIZE = 500;
 
 // Scale factor for rendering (1 = normal, 2 = 2x zoom, etc.)
 export const ZOOM = 3;
@@ -22,9 +22,11 @@ export const WALL_SURVIVAL_THRESHOLD = 4;
 export const FLOOR_TO_WALL_THRESHOLD = 5;
 
 // Lake generation parameters
-export const LAKE_NOISE_DENSITY = 0.48;
-export const LAKE_CA_ITERATIONS = 6;
+export const LAKE_NOISE_DENSITY = 0.3;
+export const LAKE_CA_ITERATIONS = 5;
 export const LAKE_SEED_OFFSET = 10000;
+export const LAKE_COUNT = 10;
+export const LAKE_CLUSTER_RADIUS = 10;
 
 export const BACKGROUND_COLOR = "#7e9432";
 

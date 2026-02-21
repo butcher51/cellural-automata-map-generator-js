@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tile Index Showroom</title>
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+        body {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            background-color: #1a1a1a;
+        }
+        #info-bar {
+            background-color: #2a2a2a;
+            color: #fff;
+            padding: 12px 20px;
+            font-family: monospace;
+            font-size: 16px;
+            border-bottom: 1px solid #333;
+        }
+        #tile-index {
+            color: #4fc3f7;
+        }
+        #canvas-container {
+            flex: 1;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            overflow: auto;
+            padding: 20px;
+        }
+        canvas {
+            border: 1px solid #333;
+            image-rendering: pixelated;
+            cursor: crosshair;
+        }
+    </style>
+</head>
+<body>
+    <div id="info-bar">
+        Tile Index: <span id="tile-index">—</span>
+    </div>
+    <div id="canvas-container">
+        <canvas id="canvas"></canvas>
+    </div>
+    <script type="module" src="tiles.js"></script>
+</body>
+</html>
