@@ -1,5 +1,6 @@
 const TILE_SIZE = 8;
 const GRID_COLS = 24;
+const SCALE = 4;  // 4x larger display
 
 const canvas = document.getElementById('canvas');
 const ctx = canvas.getContext('2d');
@@ -9,14 +10,15 @@ const image = new Image();
 image.src = 'assets/overworld.png';
 
 image.onload = () => {
-    canvas.width = image.width;
-    canvas.height = image.height;
+    canvas.width = image.width * SCALE;
+    canvas.height = image.height * SCALE;
     ctx.imageSmoothingEnabled = false;
+    ctx.scale(SCALE, SCALE);
     draw();
 };
 
 function draw(highlightCol = -1, highlightRow = -1) {
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.clearRect(0, 0, image.width, image.height);
     ctx.drawImage(image, 0, 0);
     if (highlightCol >= 0 && highlightRow >= 0) {
         ctx.strokeStyle = '#ff0000';
@@ -38,8 +40,8 @@ canvas.addEventListener('mousemove', (e) => {
     const mouseX = (e.clientX - rect.left) * scaleX;
     const mouseY = (e.clientY - rect.top) * scaleY;
 
-    const col = Math.floor(mouseX / TILE_SIZE);
-    const row = Math.floor(mouseY / TILE_SIZE);
+    const col = Math.floor(mouseX / TILE_SIZE / SCALE);
+    const row = Math.floor(mouseY / TILE_SIZE / SCALE);
     const tileIndex = row * GRID_COLS + col + 1;
 
     tileIndexDisplay.textContent = tileIndex;

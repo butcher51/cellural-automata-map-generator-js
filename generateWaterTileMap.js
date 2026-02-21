@@ -23,7 +23,7 @@ export const WATER_BORDER_INSIDE_BOTTOM_RIGHT = 491;
 
 export const WATER_INTERIOR_TILES = [
   { index: 841, chance: 1 },
-  { index: 847, chance: 0.5 },
+  { index: 847, chance: 0.2 },
   { index: 855, chance: 0.1 },
   { index: 856, chance: 0.05 },
   { index: 859, chance: 0.01 },
