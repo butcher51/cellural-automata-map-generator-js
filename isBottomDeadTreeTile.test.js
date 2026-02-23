@@ -8,7 +8,7 @@ describe("isBottomRightDeadTreeTile", () => {
   });
 
   it("returns false for bottomLeft values", () => {
-    expect(isBottomRightDeadTreeTile(DEAD_TREE_TILES[1].bottomLeft)).toBe(true); // both are 0 placeholder
+    expect(isBottomRightDeadTreeTile(DEAD_TREE_TILES[1].bottomLeft)).toBe(false);
   });
 
   it("returns false for arbitrary numbers", () => {

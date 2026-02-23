@@ -20,45 +20,65 @@
         }
         #toolbar {
             width: 100%;
-            height: 100px;
+            height: 56px;
             background-color: #2a2a2a;
             display: flex;
             align-items: center;
-            padding: 0 20px;
-            gap: 10px;
+            padding: 0 8px;
+            gap: 4px;
             flex-shrink: 0;
         }
         .tool-button {
-            padding: 12px 24px;
-            font-size: 16px;
+            padding: 6px;
+            font-size: 14px;
             font-family: sans-serif;
             background-color: #3a3a3a;
             color: #ccc;
             border: 2px solid #4a4a4a;
-            border-radius: 6px;
+            border-radius: 4px;
             cursor: pointer;
             transition: background-color 0.2s, border-color 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 44px;
+            height: 44px;
+        }
+        .tool-button img {
+            width: 32px;
+            height: 32px;
+            image-rendering: pixelated;
+            -ms-interpolation-mode: nearest-neighbor;
         }
         .tool-button:hover {
             background-color: #4a4a4a;
         }
+        .tool-button.active {
+            background-color: #5a5a5a;
+            border-color: #7a7a7a;
+            color: #fff;
+        }
+        .toolbar-spacer {
+            flex: 1;
+        }
+        .toolbar-right {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
         .seed-input {
-            width: 120px;
-            padding: 10px 12px;
-            font-size: 16px;
+            width: 80px;
+            padding: 4px 6px;
+            font-size: 13px;
             font-family: monospace;
             background-color: #3a3a3a;
             color: #ccc;
             border: 2px solid #4a4a4a;
-            border-radius: 6px;
+            border-radius: 4px;
             outline: none;
+            height: 44px;
         }
         .seed-input:focus {
-            border-color: #7a7a7a;
-            color: #fff;
-        }
-        .tool-button.active {
-            background-color: #5a5a5a;
             border-color: #7a7a7a;
             color: #fff;
         }
@@ -74,7 +94,7 @@
         }
         #layer-debug-panel {
             position: fixed;
-            top: 110px;
+            top: 66px;
             right: 10px;
             background-color: rgba(30, 30, 30, 0.85);
             color: #ccc;
@@ -122,19 +142,23 @@
 </head>
 <body>
     <div id="toolbar">
-        <button id="tree-1-tool" class="tool-button active">T1</button>
-        <button id="tree-2-tool" class="tool-button">T2</button>
-        <button id="tree-3-tool" class="tool-button">T3</button>
-        <button id="tree-4-tool" class="tool-button">T4</button>
-        <button id="pine-1-tool" class="tool-button">P1</button>
-        <button id="deadTree-1-tool" class="tool-button">DT1</button>
-        <button id="water-tool" class="tool-button">Water</button>
-        <button id="cliff-tool" class="tool-button">Cliff</button>
-        <button id="eraser-tool" class="tool-button">Eraser</button>
-        <button id="zoom-out" class="tool-button">-</button>
-        <button id="zoom-in" class="tool-button">+</button>
-        <input id="seed-input" class="seed-input" type="number" value="1">
-        <button id="new-seed-button" class="tool-button">New seed</button>
+        <button id="tree-1-tool" class="tool-button active"><img src="./assets/tree-1.png" alt="Tree 1"></button>
+        <button id="tree-2-tool" class="tool-button"><img src="./assets/tree-2.png" alt="Tree 2"></button>
+        <button id="tree-3-tool" class="tool-button"><img src="./assets/tree-3.png" alt="Tree 3"></button>
+        <button id="tree-4-tool" class="tool-button"><img src="./assets/tree-4.png" alt="Tree 4"></button>
+        <button id="pine-1-tool" class="tool-button"><img src="./assets/pine-1.png" alt="Pine"></button>
+        <button id="deadTree-1-tool" class="tool-button"><img src="./assets/deadTree-1.png" alt="Dead Tree"></button>
+        <button id="water-tool" class="tool-button"><img src="./assets/water.png" alt="Water"></button>
+        <button id="cliff-tool" class="tool-button"><img src="./assets/cliff.png" alt="Cliff"></button>
+        <button id="eraser-tool" class="tool-button"><img src="./assets/ground.png" alt="Ground"></button>
+        <div class="toolbar-spacer"></div>
+        <div class="toolbar-right">
+            <button id="zoom-out" class="tool-button">-</button>
+            <button id="zoom-in" class="tool-button">+</button>
+            <input id="seed-input" class="seed-input" type="number" value="1">
+            <button id="new-seed-button" class="tool-button">🎲</button>
+            <a href="/tiles.html" class="tool-button" style="text-decoration: none;">📋</a>
+        </div>
     </div>
     <div id="canvas-container">
         <canvas id="canvas"></canvas>
@@ -143,9 +167,6 @@
         <h3>Layers</h3>
         <div id="layer-list"></div>
     </div>
-    <a href="/tiles.html" style="position: fixed; top: 10px; right: 10px; color: #888; text-decoration: none; font-family: monospace; font-size: 13px; z-index: 1000; transition: color 0.2s;" onmouseover="this.style.color='#4fc3f7'" onmouseout="this.style.color='#888'">
-        📋 Tile Indices
-    </a>
     <script type="module" src="generator.js"></script>
 </body>
 </html>
