@@ -1,12 +1,7 @@
 import { TREE_TILES } from "./treeTileConstants.js";
+import { createBottomTileCheckers } from "./isBottomFoliageTile.js";
 
-const ALL_BOTTOM_RIGHT = new Set(Object.values(TREE_TILES).map(t => t.bottomRight));
-const ALL_BOTTOM_LEFT = new Set(Object.values(TREE_TILES).map(t => t.bottomLeft));
+const { isBottomRight, isBottomLeft } = createBottomTileCheckers(TREE_TILES);
 
-export function isBottomRightTreeTile(tile) {
-  return ALL_BOTTOM_RIGHT.has(tile);
-}
-
-export function isBottomLeftTreeTile(tile) {
-  return ALL_BOTTOM_LEFT.has(tile);
-}
+export const isBottomRightTreeTile = isBottomRight;
+export const isBottomLeftTreeTile = isBottomLeft;

@@ -2,8 +2,9 @@ import { BOX_SIZE, MAP_SIZE } from "./constants.js";
 import { getCellsInBrushArea, getCellsInRectBrushArea, pixelToGridCoordinate, setCellValue } from "./map-utils.js";
 import { isTreeTool, getTreeType } from "./treeTileConstants.js";
 import { isPineTool, getPineType } from "./pineTileConstants.js";
+import { isDeadTreeTool, getDeadTreeType } from "./deadTreeTileConstants.js";
 
-export function paintCellAtPosition({ canvas, currentTool, event, drawMap, treeValueMap, waterValueMap, cliffValueMap, pineValueMap, camera, zoom, paintedCellsInStroke, groundTileMap }) {
+export function paintCellAtPosition({ canvas, currentTool, event, drawMap, treeValueMap, waterValueMap, cliffValueMap, pineValueMap, deadTreeValueMap, camera, zoom, paintedCellsInStroke, groundTileMap }) {
   // Get click coordinates relative to canvas
   const rect = canvas.getBoundingClientRect();
   const pixelX = event.clientX - rect.left;
@@ -40,12 +41,21 @@ export function paintCellAtPosition({ canvas, currentTool, event, drawMap, treeV
         treeValueMap = setCellValue(treeValueMap, cell.x, cell.y, 0);
         treeValueMap[cell.y][cell.x].treeType = getTreeType(currentTool);
         pineValueMap = setCellValue(pineValueMap, cell.x, cell.y, 1); // Clear pines
+        deadTreeValueMap = setCellValue(deadTreeValueMap, cell.x, cell.y, 1); // Clear dead trees
         waterValueMap = setCellValue(waterValueMap, cell.x, cell.y, 0);
         cliffValueMap = setCellValue(cliffValueMap, cell.x, cell.y, 0);
       } else if (isPineTool(currentTool)) {
         pineValueMap = setCellValue(pineValueMap, cell.x, cell.y, 0);
         pineValueMap[cell.y][cell.x].pineType = getPineType(currentTool);
         treeValueMap = setCellValue(treeValueMap, cell.x, cell.y, 1); // Clear trees
+        deadTreeValueMap = setCellValue(deadTreeValueMap, cell.x, cell.y, 1); // Clear dead trees
+        waterValueMap = setCellValue(waterValueMap, cell.x, cell.y, 0);
+        cliffValueMap = setCellValue(cliffValueMap, cell.x, cell.y, 0);
+      } else if (isDeadTreeTool(currentTool)) {
+        deadTreeValueMap = setCellValue(deadTreeValueMap, cell.x, cell.y, 0);
+        deadTreeValueMap[cell.y][cell.x].deadTreeType = getDeadTreeType(currentTool);
+        treeValueMap = setCellValue(treeValueMap, cell.x, cell.y, 1); // Clear trees
+        pineValueMap = setCellValue(pineValueMap, cell.x, cell.y, 1); // Clear pines
         waterValueMap = setCellValue(waterValueMap, cell.x, cell.y, 0);
         cliffValueMap = setCellValue(cliffValueMap, cell.x, cell.y, 0);
       } else if (currentTool === "water") {
@@ -56,9 +66,11 @@ export function paintCellAtPosition({ canvas, currentTool, event, drawMap, treeV
         waterValueMap = setCellValue(waterValueMap, cell.x, cell.y, 0);
         treeValueMap = setCellValue(treeValueMap, cell.x, cell.y, 1);
         pineValueMap = setCellValue(pineValueMap, cell.x, cell.y, 1);
+        deadTreeValueMap = setCellValue(deadTreeValueMap, cell.x, cell.y, 1);
       } else if (currentTool === "eraser") {
         treeValueMap = setCellValue(treeValueMap, cell.x, cell.y, 1);
         pineValueMap = setCellValue(pineValueMap, cell.x, cell.y, 1);
+        deadTreeValueMap = setCellValue(deadTreeValueMap, cell.x, cell.y, 1);
         waterValueMap = setCellValue(waterValueMap, cell.x, cell.y, 0);
         cliffValueMap = setCellValue(cliffValueMap, cell.x, cell.y, 0);
       }
@@ -66,5 +78,5 @@ export function paintCellAtPosition({ canvas, currentTool, event, drawMap, treeV
     }
   }
 
-  return { drawMap, waterValueMap, treeValueMap, cliffValueMap, pineValueMap };
+  return { drawMap, waterValueMap, treeValueMap, cliffValueMap, pineValueMap, deadTreeValueMap };
 }

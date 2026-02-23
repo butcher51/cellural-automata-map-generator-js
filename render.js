@@ -49,6 +49,13 @@ export function render(layers, drawMap, ctx, boxSize, numberSprite, tileMapSprit
           hasOverride = true;
         }
 
+        const deadTreeTile = layer.deadTreeTileMap?.[y]?.[x];
+        if (deadTreeTile && deadTreeTile.tile !== 0) {
+          layerSpriteX = deadTreeTile.spritePosition.spriteX;
+          layerSpriteY = deadTreeTile.spritePosition.spriteY;
+          hasOverride = true;
+        }
+
         const waterTile = layer.waterTileMap?.[y]?.[x];
         if (waterTile && waterTile.tile !== 0) {
           layerSpriteX = waterTile.spritePosition.spriteX;

@@ -14,6 +14,7 @@ import { generateCliffValueMap } from "./generateCliffValueMap.js";
 import { generateDrawMap } from "./generateDrawMap.js";
 import { generateEmptyValueMap } from "./generateEmptyValueMap.js";
 import { generateGroundTileMap } from "./generateGroundMap.js";
+import { generateDeadTreeTileMap } from "./generateDeadTreeTileMap.js";
 import { generatePineTileMap } from "./generatePineTileMap.js";
 import { generateTreeTileMap } from "./generateTreeTileMap.js";
 import { generateWaterTileMap } from "./generateWaterTileMap.js";
@@ -204,6 +205,46 @@ function clearPinesFromWater(pineValueMap, waterValueMap) {
  * @param {Array} cliffValueMap - The validated cliff value map
  * @returns {Array} Updated pine value map with pines cleared from cliff areas
  */
+/**
+ * Clears dead trees from water regions and their borders
+ */
+function clearDeadTreesFromWater(deadTreeValueMap, waterValueMap) {
+  const height = waterValueMap.length;
+  const width = waterValueMap[0]?.length || 0;
+
+  let updatedMap = deadTreeValueMap;
+
+  for (let y = 0; y < height; y++) {
+    for (let x = 0; x < width; x++) {
+      if (waterValueMap[y][x].value === 1) {
+        updatedMap = setCellValue(updatedMap, x, y, 1);
+      }
+    }
+  }
+
+  return updatedMap;
+}
+
+/**
+ * Clears dead trees from cliff regions
+ */
+function clearDeadTreesFromCliffs(deadTreeValueMap, cliffValueMap) {
+  const height = cliffValueMap.length;
+  const width = cliffValueMap[0]?.length || 0;
+
+  let updatedMap = deadTreeValueMap;
+
+  for (let y = 0; y < height; y++) {
+    for (let x = 0; x < width; x++) {
+      if (cliffValueMap[y][x].value === 1) {
+        updatedMap = setCellValue(updatedMap, x, y, 1);
+      }
+    }
+  }
+
+  return updatedMap;
+}
+
 function clearPinesFromCliffs(pineValueMap, cliffValueMap) {
   const height = cliffValueMap.length;
   const width = cliffValueMap[0]?.length || 0;
@@ -249,6 +290,7 @@ const tree2Button = document.getElementById("tree-2-tool");
 const tree3Button = document.getElementById("tree-3-tool");
 const tree4Button = document.getElementById("tree-4-tool");
 const pine1Button = document.getElementById("pine-1-tool");
+const deadTree1Button = document.getElementById("deadTree-1-tool");
 const waterToolButton = document.getElementById("water-tool");
 const cliffToolButton = document.getElementById("cliff-tool");
 const eraserToolButton = document.getElementById("eraser-tool");
@@ -261,6 +303,7 @@ function setActiveTool(tool) {
   tree3Button.classList.toggle("active", tool === "tree-3");
   tree4Button.classList.toggle("active", tool === "tree-4");
   pine1Button.classList.toggle("active", tool === "pine-1");
+  deadTree1Button.classList.toggle("active", tool === "deadTree-1");
   waterToolButton.classList.toggle("active", tool === "water");
   cliffToolButton.classList.toggle("active", tool === "cliff");
   eraserToolButton.classList.toggle("active", tool === "eraser");
@@ -271,6 +314,7 @@ tree2Button.addEventListener("click", () => setActiveTool("tree-2"));
 tree3Button.addEventListener("click", () => setActiveTool("tree-3"));
 tree4Button.addEventListener("click", () => setActiveTool("tree-4"));
 pine1Button.addEventListener("click", () => setActiveTool("pine-1"));
+deadTree1Button.addEventListener("click", () => setActiveTool("deadTree-1"));
 waterToolButton.addEventListener("click", () => setActiveTool("water"));
 cliffToolButton.addEventListener("click", () => setActiveTool("cliff"));
 eraserToolButton.addEventListener("click", () => setActiveTool("eraser"));
@@ -329,8 +373,9 @@ baseLayer.cliffTileMap = generateCliffTileMap(
 );
 
 baseLayer.pineValueMap = generateEmptyValueMap(MAP_SIZE, 1); // All 1s = no pines initially
+baseLayer.deadTreeValueMap = generateEmptyValueMap(MAP_SIZE, 1); // All 1s = no dead trees initially
 
-// Clear trees and pines from water areas
+// Clear trees, pines, and dead trees from water areas
 baseLayer.treeValueMap = clearTreesFromWater(
   baseLayer.treeValueMap,
   baseLayer.waterValueMap,
@@ -339,8 +384,13 @@ baseLayer.pineValueMap = clearPinesFromWater(
   baseLayer.pineValueMap,
   baseLayer.waterValueMap,
 );
+baseLayer.deadTreeValueMap = clearDeadTreesFromWater(
+  baseLayer.deadTreeValueMap,
+  baseLayer.waterValueMap,
+);
 
 baseLayer.pineTileMap = generatePineTileMap(baseLayer.pineValueMap);
+baseLayer.deadTreeTileMap = generateDeadTreeTileMap(baseLayer.deadTreeValueMap);
 
 baseLayer.treeTileMap = generateTreeTileMap(baseLayer.treeValueMap);
 
@@ -466,12 +516,14 @@ function handleMouseDown(event) {
     waterValueMap: layer.waterValueMap,
     cliffValueMap: layer.cliffValueMap,
     pineValueMap: layer.pineValueMap,
+    deadTreeValueMap: layer.deadTreeValueMap,
     camera,
     zoom,
     paintedCellsInStroke,
     groundTileMap: layer.groundTileMap,
   });
   layer.pineValueMap = result.pineValueMap;
+  layer.deadTreeValueMap = result.deadTreeValueMap;
 }
 
 // Handle mouse move to continue painting
@@ -505,12 +557,14 @@ function handleMouseMove(event) {
     waterValueMap: layer.waterValueMap,
     cliffValueMap: layer.cliffValueMap,
     pineValueMap: layer.pineValueMap,
+    deadTreeValueMap: layer.deadTreeValueMap,
     camera,
     zoom,
     paintedCellsInStroke,
     groundTileMap: layer.groundTileMap,
   });
   layer.pineValueMap = result.pineValueMap;
+  layer.deadTreeValueMap = result.deadTreeValueMap;
 }
 
 // Handle mouse up to finish painting and rerun iterations
@@ -584,6 +638,20 @@ function handleMouseUp(event) {
   layer.pineValueMap = applyOrganicIterations(layer.pineValueMap, ITERATIONS);
   layer.pineTileMap = generatePineTileMap(layer.pineValueMap);
 
+  // Clear dead trees from incompatible terrain
+  layer.deadTreeValueMap = clearDeadTreesFromCliffs(
+    layer.deadTreeValueMap,
+    layer.cliffValueMap,
+  );
+  layer.deadTreeValueMap = clearDeadTreesFromWater(
+    layer.deadTreeValueMap,
+    layer.waterValueMap,
+  );
+
+  // Process dead trees with organic iterations
+  layer.deadTreeValueMap = applyOrganicIterations(layer.deadTreeValueMap, ITERATIONS);
+  layer.deadTreeTileMap = generateDeadTreeTileMap(layer.deadTreeValueMap);
+
   // Sync layer stack
   layers = syncLayerStack(layers, strokeTargetLayerIndex);
   updateLayerDebugPanel();
@@ -637,6 +705,8 @@ function handleTouchStart(event) {
       treeValueMap: layer.treeValueMap,
       waterValueMap: layer.waterValueMap,
       cliffValueMap: layer.cliffValueMap,
+      pineValueMap: layer.pineValueMap,
+      deadTreeValueMap: layer.deadTreeValueMap,
       camera,
       zoom,
       paintedCellsInStroke,
@@ -696,6 +766,8 @@ function handleTouchMove(event) {
     treeValueMap: layer.treeValueMap,
     waterValueMap: layer.waterValueMap,
     cliffValueMap: layer.cliffValueMap,
+    pineValueMap: layer.pineValueMap,
+    deadTreeValueMap: layer.deadTreeValueMap,
     camera,
     zoom,
     paintedCellsInStroke,
@@ -790,8 +862,9 @@ function regenerateMap(newSeed) {
     baseLayer.cliffTileMap || [],
   );
   baseLayer.pineValueMap = generateEmptyValueMap(MAP_SIZE, 1); // All 1s = no pines initially
+  baseLayer.deadTreeValueMap = generateEmptyValueMap(MAP_SIZE, 1); // All 1s = no dead trees initially
 
-  // Clear trees and pines from water areas
+  // Clear trees, pines, and dead trees from water areas
   baseLayer.treeValueMap = clearTreesFromWater(
     baseLayer.treeValueMap,
     baseLayer.waterValueMap,
@@ -800,8 +873,13 @@ function regenerateMap(newSeed) {
     baseLayer.pineValueMap,
     baseLayer.waterValueMap,
   );
+  baseLayer.deadTreeValueMap = clearDeadTreesFromWater(
+    baseLayer.deadTreeValueMap,
+    baseLayer.waterValueMap,
+  );
 
   baseLayer.pineTileMap = generatePineTileMap(baseLayer.pineValueMap);
+  baseLayer.deadTreeTileMap = generateDeadTreeTileMap(baseLayer.deadTreeValueMap);
   baseLayer.treeTileMap = generateTreeTileMap(baseLayer.treeValueMap);
 
   layers = [baseLayer];

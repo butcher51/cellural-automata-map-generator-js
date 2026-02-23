@@ -4,7 +4,7 @@
 export const BOX_SIZE = 8;
 
 // Grid dimensions (100x100 boxes = 10,000 boxes total)
-export const MAP_SIZE = 500;
+export const MAP_SIZE = 200;
 
 // Scale factor for rendering (1 = normal, 2 = 2x zoom, etc.)
 export const ZOOM = 3;
@@ -46,20 +46,20 @@ export const GROUND_TILES = [
   { index: 24 + 3, chance: 0.1 },
   { index: 24 + 4, chance: 0.1 },
   { index: 48 + 1, chance: 0.1 },
-  { index: 48 + 2, chance: 0.1 },
+  { index: 48 + 2, chance: 0.05 },
   { index: 48 + 3, chance: 0.01 },
   { index: 48 + 4, chance: 0.01 },
-  { index: 72 + 1, chance: 0.01 },
-  { index: 72 + 2, chance: 0.01 },
-  { index: 72 + 3, chance: 0.01 },
-  { index: 72 + 4, chance: 0.01 },
-  { index: 96 + 1, chance: 0.01 },
-  { index: 96 + 2, chance: 0.01 },
-  { index: 96 + 3, chance: 0.01 },
-  { index: 96 + 4, chance: 0.01 },
-  { index: 120 + 1, chance: 0.01 },
-  { index: 120 + 2, chance: 0.01 },
-  { index: 120 + 3, chance: 0.01 },
+  { index: 72 + 1, chance: 0.02 },
+  { index: 72 + 2, chance: 0.02 },
+  { index: 72 + 3, chance: 0.02 },
+  { index: 72 + 4, chance: 0.02 },
+  { index: 96 + 1, chance: 0.02 },
+  { index: 96 + 2, chance: 0.02 },
+  { index: 96 + 3, chance: 0.02 },
+  { index: 96 + 4, chance: 0.02 },
+  { index: 120 + 1, chance: 0.02 },
+  { index: 120 + 2, chance: 0.02 },
+  { index: 120 + 3, chance: 0.02 },
   { index: 120 + 4, chance: 0.005 },
   { index: 144 + 1, chance: 0.005 },
   { index: 144 + 2, chance: 0.005 },

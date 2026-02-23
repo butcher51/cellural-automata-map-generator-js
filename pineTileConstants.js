@@ -1,3 +1,5 @@
+import { createFoliageToolUtils } from "./foliageToolUtils.js";
+
 export const DEFAULT_PINE_TYPE = 1;
 
 export const PINE_TILES = {
@@ -11,13 +13,7 @@ export const PINE_TILES = {
   },
 };
 
-const VALID_PINE_TOOLS = new Set(["pine-1"]);
+const { isTool, getType } = createFoliageToolUtils("pine", ["1"], DEFAULT_PINE_TYPE);
 
-export function isPineTool(tool) {
-  return VALID_PINE_TOOLS.has(tool);
-}
-
-export function getPineType(tool) {
-  if (!isPineTool(tool)) return DEFAULT_PINE_TYPE;
-  return parseInt(tool.split("-")[1], 10);
-}
+export const isPineTool = isTool;
+export const getPineType = getType;

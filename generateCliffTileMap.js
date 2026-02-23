@@ -41,17 +41,17 @@ export const CLIFF_WALL_BOTTOM_RIGHT = 357;
 
 // braun
 // Surface edge tiles (same as old cliff implementation)
-export const CLIFF_BORDER_TOP = 201;
-export const CLIFF_BORDER_RIGHT = 251;
-export const CLIFF_BORDER_LEFT = 247;
+export const CLIFF_BORDER_TOP = 14;
+export const CLIFF_BORDER_RIGHT = 41;
+export const CLIFF_BORDER_LEFT = 35;
 
 // Surface outside corners (convex)
-export const CLIFF_BORDER_CORNER_TOP_LEFT = 200;
-export const CLIFF_BORDER_CORNER_TOP_RIGHT = 202;
+export const CLIFF_BORDER_CORNER_TOP_LEFT = 13;
+export const CLIFF_BORDER_CORNER_TOP_RIGHT = 15;
 
 // Surface inside corners (concave)
-export const CLIFF_BORDER_INSIDE_TOP_LEFT = 224;
-export const CLIFF_BORDER_INSIDE_TOP_RIGHT = 226;
+export const CLIFF_BORDER_INSIDE_TOP_LEFT = 37;
+export const CLIFF_BORDER_INSIDE_TOP_RIGHT = 39;
 
 export const CLIFF_BORDER_INSIDE_BOTTOM_LEFT_TOP = 11;
 export const CLIFF_BORDER_INSIDE_BOTTOM_RIGHT_TOP = 17;

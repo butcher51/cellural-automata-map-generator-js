@@ -1,3 +1,5 @@
+import { createFoliageToolUtils } from "./foliageToolUtils.js";
+
 export const DEFAULT_TREE_TYPE = 1;
 
 export const TREE_TILES = {
@@ -35,13 +37,7 @@ export const TREE_TILES = {
   },
 };
 
-const VALID_TREE_TOOLS = new Set(["tree-1", "tree-2", "tree-3", "tree-4"]);
+const { isTool, getType } = createFoliageToolUtils("tree", ["1", "2", "3", "4"], DEFAULT_TREE_TYPE);
 
-export function isTreeTool(tool) {
-  return VALID_TREE_TOOLS.has(tool);
-}
-
-export function getTreeType(tool) {
-  if (!isTreeTool(tool)) return DEFAULT_TREE_TYPE;
-  return parseInt(tool.split("-")[1], 10);
-}
+export const isTreeTool = isTool;
+export const getTreeType = getType;
