@@ -1,3 +1,4 @@
+import { buildHash } from "./buildHash.js";
 import { cleanupCliffArtifacts } from "./cleanupCliffArtifacts.js";
 import { cleanupWaterArtifacts } from "./cleanupWaterArtifacts.js";
 import {
@@ -7,20 +8,22 @@ import {
   ZOOM as DEFAULT_ZOOM,
   ITERATIONS,
   MAP_SIZE,
+  SEED,
   setSeed,
 } from "./constants.js";
 import { generateCliffTileMap } from "./generateCliffTileMap.js";
 import { generateCliffValueMap } from "./generateCliffValueMap.js";
+import { generateDeadTreeTileMap } from "./generateDeadTreeTileMap.js";
+import { generateDeepWaterTileMap } from "./generateDeepWaterTileMap.js";
+import { generateDeepWaterValueMap } from "./generateDeepWaterValueMap.js";
 import { generateDrawMap } from "./generateDrawMap.js";
 import { generateEmptyValueMap } from "./generateEmptyValueMap.js";
 import { generateGroundTileMap } from "./generateGroundMap.js";
-import { generateDeadTreeTileMap } from "./generateDeadTreeTileMap.js";
 import { generatePineTileMap } from "./generatePineTileMap.js";
 import { generateTreeTileMap } from "./generateTreeTileMap.js";
-import { generateDeepWaterTileMap } from "./generateDeepWaterTileMap.js";
-import { generateDeepWaterValueMap } from "./generateDeepWaterValueMap.js";
 import { generateWaterTileMap } from "./generateWaterTileMap.js";
 import { generateWaterValueMap } from "./generateWaterValueMap.js";
+import { initSeed } from "./initSeed.js";
 import { createLayer } from "./layer.js";
 import {
   applyOrganicIterations,
@@ -34,6 +37,7 @@ import {
   updateCamera,
 } from "./map-utils.js";
 import { paintCellAtPosition } from "./paintCellAtPosition.js";
+import { parseHash } from "./parseHash.js";
 import { render } from "./render.js";
 import { syncLayerStack } from "./syncLayerStack.js";
 import { initZoomPrevention } from "./zoomPrevention.js";
@@ -352,6 +356,10 @@ function getActiveLayer() {
 
 drawMap = generateDrawMap();
 
+// Seed controls (declared early for hash parsing)
+const seedInput = document.getElementById("seed-input");
+seedInput.value = initSeed();
+
 // Create the base layer and populate its maps
 const baseLayer = createLayer("layer-0", "Base Layer", 0);
 
@@ -367,9 +375,16 @@ baseLayer.waterTileMap = generateWaterTileMap(
   baseLayer.waterTileMap,
 );
 
-baseLayer.deepWaterValueMap = generateDeepWaterValueMap(baseLayer.waterValueMap);
-baseLayer.deepWaterValueMap = cleanupWaterArtifacts(baseLayer.deepWaterValueMap);
-baseLayer.deepWaterTileMap = generateDeepWaterTileMap(baseLayer.deepWaterValueMap, baseLayer.deepWaterTileMap);
+baseLayer.deepWaterValueMap = generateDeepWaterValueMap(
+  baseLayer.waterValueMap,
+);
+baseLayer.deepWaterValueMap = cleanupWaterArtifacts(
+  baseLayer.deepWaterValueMap,
+);
+baseLayer.deepWaterTileMap = generateDeepWaterTileMap(
+  baseLayer.deepWaterValueMap,
+  baseLayer.deepWaterTileMap,
+);
 
 baseLayer.cliffValueMap = generateCliffValueMap();
 
@@ -608,7 +623,10 @@ function handleMouseUp(event) {
 
   layer.deepWaterValueMap = generateDeepWaterValueMap(layer.waterValueMap);
   layer.deepWaterValueMap = cleanupWaterArtifacts(layer.deepWaterValueMap);
-  layer.deepWaterTileMap = generateDeepWaterTileMap(layer.deepWaterValueMap, layer.deepWaterTileMap);
+  layer.deepWaterTileMap = generateDeepWaterTileMap(
+    layer.deepWaterValueMap,
+    layer.deepWaterTileMap,
+  );
 
   // Clear trees and water from cliff areas
   layer.treeValueMap = clearTreesFromCliffs(
@@ -659,7 +677,10 @@ function handleMouseUp(event) {
   );
 
   // Process dead trees with organic iterations
-  layer.deadTreeValueMap = applyOrganicIterations(layer.deadTreeValueMap, ITERATIONS);
+  layer.deadTreeValueMap = applyOrganicIterations(
+    layer.deadTreeValueMap,
+    ITERATIONS,
+  );
   layer.deadTreeTileMap = generateDeadTreeTileMap(layer.deadTreeValueMap);
 
   // Sync layer stack
@@ -844,13 +865,12 @@ document.getElementById("zoom-out").addEventListener("click", () => {
   zoom = Math.max(zoom - 1, MIN_ZOOM);
 });
 
-// Seed controls
-const seedInput = document.getElementById("seed-input");
 const newSeedButton = document.getElementById("new-seed-button");
 
 function regenerateMap(newSeed) {
   setSeed(newSeed);
   seedInput.value = newSeed;
+  history.replaceState(null, "", buildHash({ seed: newSeed }));
 
   drawMap = generateDrawMap();
 
@@ -867,9 +887,16 @@ function regenerateMap(newSeed) {
     baseLayer.waterTileMap,
   );
 
-  baseLayer.deepWaterValueMap = generateDeepWaterValueMap(baseLayer.waterValueMap);
-  baseLayer.deepWaterValueMap = cleanupWaterArtifacts(baseLayer.deepWaterValueMap);
-  baseLayer.deepWaterTileMap = generateDeepWaterTileMap(baseLayer.deepWaterValueMap, baseLayer.deepWaterTileMap);
+  baseLayer.deepWaterValueMap = generateDeepWaterValueMap(
+    baseLayer.waterValueMap,
+  );
+  baseLayer.deepWaterValueMap = cleanupWaterArtifacts(
+    baseLayer.deepWaterValueMap,
+  );
+  baseLayer.deepWaterTileMap = generateDeepWaterTileMap(
+    baseLayer.deepWaterValueMap,
+    baseLayer.deepWaterTileMap,
+  );
 
   baseLayer.cliffValueMap = generateCliffValueMap();
   baseLayer.cliffTileMap = generateCliffTileMap(
@@ -894,7 +921,9 @@ function regenerateMap(newSeed) {
   );
 
   baseLayer.pineTileMap = generatePineTileMap(baseLayer.pineValueMap);
-  baseLayer.deadTreeTileMap = generateDeadTreeTileMap(baseLayer.deadTreeValueMap);
+  baseLayer.deadTreeTileMap = generateDeadTreeTileMap(
+    baseLayer.deadTreeValueMap,
+  );
   baseLayer.treeTileMap = generateTreeTileMap(baseLayer.treeValueMap);
 
   layers = [baseLayer];
@@ -914,6 +943,14 @@ seedInput.addEventListener("keydown", (e) => {
     if (!isNaN(newSeed)) {
       regenerateMap(newSeed);
     }
+  }
+});
+
+// Listen for URL hash changes (e.g. user edits hash in address bar)
+window.addEventListener("hashchange", () => {
+  const hashParams = parseHash(window.location.hash);
+  if (hashParams.seed !== undefined && hashParams.seed !== SEED) {
+    regenerateMap(hashParams.seed);
   }
 });
 
