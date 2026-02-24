@@ -63,6 +63,13 @@ export function render(layers, drawMap, ctx, boxSize, numberSprite, tileMapSprit
           hasOverride = true;
         }
 
+        const deepWaterTile = layer.deepWaterTileMap?.[y]?.[x];
+        if (deepWaterTile && deepWaterTile.tileIndex) {
+          layerSpriteX = deepWaterTile.spritePosition.spriteX;
+          layerSpriteY = deepWaterTile.spritePosition.spriteY;
+          hasOverride = true;
+        }
+
         const cliffTile = layer.cliffTileMap?.[y]?.[x];
         if (cliffTile && cliffTile.tileIndex) {
           layerSpriteX = cliffTile.spritePosition.spriteX;

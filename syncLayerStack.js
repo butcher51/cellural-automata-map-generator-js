@@ -1,3 +1,4 @@
+import { cleanupWaterArtifacts } from "./cleanupWaterArtifacts.js";
 import { MAP_SIZE } from "./constants.js";
 import { createLayer } from "./layer.js";
 import { generateCliffTileMap } from "./generateCliffTileMap.js";
@@ -7,6 +8,8 @@ import { generateSparseGroundTileMap } from "./generateSparseGroundTileMap.js";
 import { generateTreeTileMap } from "./generateTreeTileMap.js";
 import { generatePineTileMap } from "./generatePineTileMap.js";
 import { generateDeadTreeTileMap } from "./generateDeadTreeTileMap.js";
+import { generateDeepWaterTileMap } from "./generateDeepWaterTileMap.js";
+import { generateDeepWaterValueMap } from "./generateDeepWaterValueMap.js";
 import { generateWaterTileMap } from "./generateWaterTileMap.js";
 import { generateWaterValueMap } from "./generateWaterValueMap.js";
 import { getCliffInteriorCells } from "./getCliffInteriorCells.js";
@@ -52,6 +55,9 @@ function syncFromLayer(layers, layerIndex) {
               existingLayer.deadTreeValueMap[y][x].value = 1; // No dead trees
             }
             existingLayer.waterValueMap[y][x].value = 0; // No water
+            if (existingLayer.deepWaterValueMap && existingLayer.deepWaterValueMap[y]?.[x]) {
+              existingLayer.deepWaterValueMap[y][x].value = 0; // No deep water
+            }
             existingLayer.cliffValueMap[y][x].value = 0; // No cliff
           }
         }
@@ -60,6 +66,9 @@ function syncFromLayer(layers, layerIndex) {
       // Regenerate tile maps
       existingLayer.cliffTileMap = generateCliffTileMap(existingLayer.cliffValueMap, existingLayer.cliffTileMap || []);
       existingLayer.waterTileMap = generateWaterTileMap(existingLayer.waterValueMap, existingLayer.waterTileMap);
+      existingLayer.deepWaterValueMap = generateDeepWaterValueMap(existingLayer.waterValueMap);
+      existingLayer.deepWaterValueMap = cleanupWaterArtifacts(existingLayer.deepWaterValueMap);
+      existingLayer.deepWaterTileMap = generateDeepWaterTileMap(existingLayer.deepWaterValueMap, existingLayer.deepWaterTileMap);
       existingLayer.treeTileMap = generateTreeTileMap(existingLayer.treeValueMap);
       if (existingLayer.pineValueMap) {
         existingLayer.pineTileMap = generatePineTileMap(existingLayer.pineValueMap);
@@ -92,6 +101,9 @@ function syncFromLayer(layers, layerIndex) {
       newLayer.deadTreeTileMap = generateDeadTreeTileMap(newLayer.deadTreeValueMap);
       newLayer.cliffTileMap = generateCliffTileMap(newLayer.cliffValueMap, []);
       newLayer.waterTileMap = generateWaterTileMap(newLayer.waterValueMap, null);
+      newLayer.deepWaterValueMap = generateDeepWaterValueMap(newLayer.waterValueMap);
+      newLayer.deepWaterValueMap = cleanupWaterArtifacts(newLayer.deepWaterValueMap);
+      newLayer.deepWaterTileMap = generateDeepWaterTileMap(newLayer.deepWaterValueMap, null);
 
       // Sparse ground at interior positions
       newLayer.groundTileMap = generateSparseGroundTileMap(interiorCells, MAP_SIZE);

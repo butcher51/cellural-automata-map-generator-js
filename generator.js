@@ -17,6 +17,8 @@ import { generateGroundTileMap } from "./generateGroundMap.js";
 import { generateDeadTreeTileMap } from "./generateDeadTreeTileMap.js";
 import { generatePineTileMap } from "./generatePineTileMap.js";
 import { generateTreeTileMap } from "./generateTreeTileMap.js";
+import { generateDeepWaterTileMap } from "./generateDeepWaterTileMap.js";
+import { generateDeepWaterValueMap } from "./generateDeepWaterValueMap.js";
 import { generateWaterTileMap } from "./generateWaterTileMap.js";
 import { generateWaterValueMap } from "./generateWaterValueMap.js";
 import { createLayer } from "./layer.js";
@@ -365,6 +367,10 @@ baseLayer.waterTileMap = generateWaterTileMap(
   baseLayer.waterTileMap,
 );
 
+baseLayer.deepWaterValueMap = generateDeepWaterValueMap(baseLayer.waterValueMap);
+baseLayer.deepWaterValueMap = cleanupWaterArtifacts(baseLayer.deepWaterValueMap);
+baseLayer.deepWaterTileMap = generateDeepWaterTileMap(baseLayer.deepWaterValueMap, baseLayer.deepWaterTileMap);
+
 baseLayer.cliffValueMap = generateCliffValueMap();
 
 baseLayer.cliffTileMap = generateCliffTileMap(
@@ -599,6 +605,10 @@ function handleMouseUp(event) {
     layer.waterValueMap,
     layer.waterTileMap,
   );
+
+  layer.deepWaterValueMap = generateDeepWaterValueMap(layer.waterValueMap);
+  layer.deepWaterValueMap = cleanupWaterArtifacts(layer.deepWaterValueMap);
+  layer.deepWaterTileMap = generateDeepWaterTileMap(layer.deepWaterValueMap, layer.deepWaterTileMap);
 
   // Clear trees and water from cliff areas
   layer.treeValueMap = clearTreesFromCliffs(
@@ -856,6 +866,11 @@ function regenerateMap(newSeed) {
     baseLayer.waterValueMap,
     baseLayer.waterTileMap,
   );
+
+  baseLayer.deepWaterValueMap = generateDeepWaterValueMap(baseLayer.waterValueMap);
+  baseLayer.deepWaterValueMap = cleanupWaterArtifacts(baseLayer.deepWaterValueMap);
+  baseLayer.deepWaterTileMap = generateDeepWaterTileMap(baseLayer.deepWaterValueMap, baseLayer.deepWaterTileMap);
+
   baseLayer.cliffValueMap = generateCliffValueMap();
   baseLayer.cliffTileMap = generateCliffTileMap(
     baseLayer.cliffValueMap,

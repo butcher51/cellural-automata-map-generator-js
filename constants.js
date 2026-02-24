@@ -28,6 +28,8 @@ export const LAKE_SEED_OFFSET = 10000;
 export const LAKE_COUNT = 10;
 export const LAKE_CLUSTER_RADIUS = 10;
 
+export const DEEP_WATER_GAP = 4;
+
 export const BACKGROUND_COLOR = "#7e9432";
 
 export let SEED = 1;
