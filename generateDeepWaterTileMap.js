@@ -23,12 +23,12 @@ export const DEEP_WATER_BORDER_INSIDE_BOTTOM_RIGHT = 794;
 
 export const DEEP_WATER_INTERIOR_TILES = [
   { index: 865, chance: 1 },
-  { index: 871, chance: 0.2 },
-  { index: 879, chance: 0.1 },
-  { index: 880, chance: 0.05 },
-  { index: 883, chance: 0.01 },
-  { index: 884, chance: 0.01 },
-  { index: 885, chance: 0.1 },
+  { index: 871, chance: 0.1 },
+  { index: 879, chance: 0.01 },
+  { index: 880, chance: 0.01 },
+  { index: 883, chance: 0.005 },
+  { index: 884, chance: 0.005 },
+  { index: 885, chance: 0.005 },
 ];
 
 // Grouped exports for convenience
