@@ -48,6 +48,25 @@ canvas.addEventListener('mousemove', (e) => {
     draw(col, row);
 });
 
+canvas.addEventListener('click', (e) => {
+    const rect = canvas.getBoundingClientRect();
+    const scaleX = canvas.width / rect.width;
+    const scaleY = canvas.height / rect.height;
+
+    const mouseX = (e.clientX - rect.left) * scaleX;
+    const mouseY = (e.clientY - rect.top) * scaleY;
+
+    const col = Math.floor(mouseX / TILE_SIZE / SCALE);
+    const row = Math.floor(mouseY / TILE_SIZE / SCALE);
+    const tileIndex = row * GRID_COLS + col + 1;
+
+    navigator.clipboard.writeText(String(tileIndex));
+    tileIndexDisplay.textContent = 'Copied!';
+    setTimeout(() => {
+        tileIndexDisplay.textContent = tileIndex;
+    }, 800);
+});
+
 canvas.addEventListener('mouseleave', () => {
     tileIndexDisplay.textContent = '—';
     draw();
