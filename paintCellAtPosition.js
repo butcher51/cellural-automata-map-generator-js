@@ -4,7 +4,7 @@ import { isTreeTool, getTreeType } from "./treeTileConstants.js";
 import { isPineTool, getPineType } from "./pineTileConstants.js";
 import { isDeadTreeTool, getDeadTreeType } from "./deadTreeTileConstants.js";
 
-export function paintCellAtPosition({ canvas, currentTool, event, drawMap, treeValueMap, waterValueMap, cliffValueMap, pineValueMap, deadTreeValueMap, camera, zoom, paintedCellsInStroke, groundTileMap }) {
+export function paintCellAtPosition({ canvas, currentTool, event, drawMap, treeValueMap, waterValueMap, cliffValueMap, pineValueMap, deadTreeValueMap, lineTileValueMap, camera, zoom, paintedCellsInStroke, groundTileMap }) {
   // Get click coordinates relative to canvas
   const rect = canvas.getBoundingClientRect();
   const pixelX = event.clientX - rect.left;
@@ -44,6 +44,7 @@ export function paintCellAtPosition({ canvas, currentTool, event, drawMap, treeV
         deadTreeValueMap = setCellValue(deadTreeValueMap, cell.x, cell.y, 1); // Clear dead trees
         waterValueMap = setCellValue(waterValueMap, cell.x, cell.y, 0);
         cliffValueMap = setCellValue(cliffValueMap, cell.x, cell.y, 0);
+        if (lineTileValueMap) lineTileValueMap = setCellValue(lineTileValueMap, cell.x, cell.y, 0);
       } else if (isPineTool(currentTool)) {
         pineValueMap = setCellValue(pineValueMap, cell.x, cell.y, 0);
         pineValueMap[cell.y][cell.x].pineType = getPineType(currentTool);
@@ -51,6 +52,7 @@ export function paintCellAtPosition({ canvas, currentTool, event, drawMap, treeV
         deadTreeValueMap = setCellValue(deadTreeValueMap, cell.x, cell.y, 1); // Clear dead trees
         waterValueMap = setCellValue(waterValueMap, cell.x, cell.y, 0);
         cliffValueMap = setCellValue(cliffValueMap, cell.x, cell.y, 0);
+        if (lineTileValueMap) lineTileValueMap = setCellValue(lineTileValueMap, cell.x, cell.y, 0);
       } else if (isDeadTreeTool(currentTool)) {
         deadTreeValueMap = setCellValue(deadTreeValueMap, cell.x, cell.y, 0);
         deadTreeValueMap[cell.y][cell.x].deadTreeType = getDeadTreeType(currentTool);
@@ -58,25 +60,29 @@ export function paintCellAtPosition({ canvas, currentTool, event, drawMap, treeV
         pineValueMap = setCellValue(pineValueMap, cell.x, cell.y, 1); // Clear pines
         waterValueMap = setCellValue(waterValueMap, cell.x, cell.y, 0);
         cliffValueMap = setCellValue(cliffValueMap, cell.x, cell.y, 0);
+        if (lineTileValueMap) lineTileValueMap = setCellValue(lineTileValueMap, cell.x, cell.y, 0);
       } else if (currentTool === "water") {
         waterValueMap = setCellValue(waterValueMap, cell.x, cell.y, 1);
         cliffValueMap = setCellValue(cliffValueMap, cell.x, cell.y, 0);
+        if (lineTileValueMap) lineTileValueMap = setCellValue(lineTileValueMap, cell.x, cell.y, 0);
       } else if (currentTool === "cliff") {
         cliffValueMap = setCellValue(cliffValueMap, cell.x, cell.y, 1);
         waterValueMap = setCellValue(waterValueMap, cell.x, cell.y, 0);
         treeValueMap = setCellValue(treeValueMap, cell.x, cell.y, 1);
         pineValueMap = setCellValue(pineValueMap, cell.x, cell.y, 1);
         deadTreeValueMap = setCellValue(deadTreeValueMap, cell.x, cell.y, 1);
+        if (lineTileValueMap) lineTileValueMap = setCellValue(lineTileValueMap, cell.x, cell.y, 0);
       } else if (currentTool === "eraser") {
         treeValueMap = setCellValue(treeValueMap, cell.x, cell.y, 1);
         pineValueMap = setCellValue(pineValueMap, cell.x, cell.y, 1);
         deadTreeValueMap = setCellValue(deadTreeValueMap, cell.x, cell.y, 1);
         waterValueMap = setCellValue(waterValueMap, cell.x, cell.y, 0);
         cliffValueMap = setCellValue(cliffValueMap, cell.x, cell.y, 0);
+        if (lineTileValueMap) lineTileValueMap = setCellValue(lineTileValueMap, cell.x, cell.y, 0);
       }
       paintedCellsInStroke.add(cellKey);
     }
   }
 
-  return { drawMap, waterValueMap, treeValueMap, cliffValueMap, pineValueMap, deadTreeValueMap };
+  return { drawMap, waterValueMap, treeValueMap, cliffValueMap, pineValueMap, deadTreeValueMap, lineTileValueMap };
 }

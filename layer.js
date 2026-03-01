@@ -16,12 +16,14 @@ export function createLayer(id, name, order) {
     cliffValueMap: null,
     pineValueMap: null,
     deadTreeValueMap: null,
+    lineTileValueMap: null,
     treeTileMap: null,
     waterTileMap: null,
     deepWaterTileMap: null,
     cliffTileMap: null,
     pineTileMap: null,
     deadTreeTileMap: null,
+    lineTileTileMap: null,
     groundTileMap: null,
   };
 }
@@ -39,6 +41,7 @@ export function getValueMaps(layer) {
     cliffValueMap: layer.cliffValueMap,
     pineValueMap: layer.pineValueMap,
     deadTreeValueMap: layer.deadTreeValueMap,
+    lineTileValueMap: layer.lineTileValueMap,
   };
 }
 
@@ -55,6 +58,7 @@ export function getTileMaps(layer) {
     cliffTileMap: layer.cliffTileMap,
     pineTileMap: layer.pineTileMap,
     deadTreeTileMap: layer.deadTreeTileMap,
+    lineTileTileMap: layer.lineTileTileMap,
     groundTileMap: layer.groundTileMap,
   };
 }

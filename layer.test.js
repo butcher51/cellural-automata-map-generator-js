@@ -15,6 +15,7 @@ describe("createLayer", () => {
     expect(layer.waterValueMap).toBeNull();
     expect(layer.deepWaterValueMap).toBeNull();
     expect(layer.pineValueMap).toBeNull();
+    expect(layer.lineTileValueMap).toBeNull();
   });
 
   it("should initialize all tile maps to null", () => {
@@ -23,6 +24,7 @@ describe("createLayer", () => {
     expect(layer.waterTileMap).toBeNull();
     expect(layer.deepWaterTileMap).toBeNull();
     expect(layer.pineTileMap).toBeNull();
+    expect(layer.lineTileTileMap).toBeNull();
     expect(layer.groundTileMap).toBeNull();
   });
 
@@ -53,7 +55,7 @@ describe("getValueMaps", () => {
   it("should only contain the five value map keys", () => {
     const layer = createLayer("layer-0", "Base", 0);
     const result = getValueMaps(layer);
-    expect(Object.keys(result)).toEqual(["treeValueMap", "waterValueMap", "deepWaterValueMap", "cliffValueMap", "pineValueMap", "deadTreeValueMap"]);
+    expect(Object.keys(result)).toEqual(["treeValueMap", "waterValueMap", "deepWaterValueMap", "cliffValueMap", "pineValueMap", "deadTreeValueMap", "lineTileValueMap"]);
   });
 });
 
@@ -81,7 +83,7 @@ describe("getTileMaps", () => {
   it("should only contain the six tile map keys", () => {
     const layer = createLayer("layer-0", "Base", 0);
     const result = getTileMaps(layer);
-    expect(Object.keys(result)).toEqual(["treeTileMap", "waterTileMap", "deepWaterTileMap", "cliffTileMap", "pineTileMap", "deadTreeTileMap", "groundTileMap"]);
+    expect(Object.keys(result)).toEqual(["treeTileMap", "waterTileMap", "deepWaterTileMap", "cliffTileMap", "pineTileMap", "deadTreeTileMap", "lineTileTileMap", "groundTileMap"]);
   });
 });
 

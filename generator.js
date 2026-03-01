@@ -23,8 +23,12 @@ import { generatePineTileMap } from "./generatePineTileMap.js";
 import { generateTreeTileMap } from "./generateTreeTileMap.js";
 import { generateWaterTileMap } from "./generateWaterTileMap.js";
 import { generateWaterValueMap } from "./generateWaterValueMap.js";
+import { generateLineTileTileMap } from "./generateLineTileTileMap.js";
+import { getBresenhamLine } from "./getBresenhamLine.js";
 import { initSeed } from "./initSeed.js";
 import { createLayer } from "./layer.js";
+import { isLineTileTool, getLineTileType } from "./lineTileTileConstants.js";
+import { paintLineTileLine } from "./paintLineTileLine.js";
 import {
   applyOrganicIterations,
   clampCamera,
@@ -60,6 +64,10 @@ let lastPanMousePosition = null;
 let cursorGridX = null; // Grid X position of cursor (null if outside canvas)
 let cursorGridY = null; // Grid Y position of cursor (null if outside canvas)
 let cursorPreviewCells = []; // Array of {x, y} cells to preview
+
+// LineTile drawing state
+let lineTileStartCell = null; // {x, y} where line drawing started
+let lineTilePreviewCells = []; // line preview cells for rendering
 
 // Load number sprite sheet (100x10 PNG: nine 10x10 digits 0-8)
 const numberSprite = new Image();
@@ -103,7 +111,9 @@ function updateCursorPreview(event) {
   cursorGridY = y;
 
   // Calculate preview cells based on tool
-  if (currentTool === "cliff") {
+  if (isLineTileTool(currentTool)) {
+    cursorPreviewCells = [{ x, y }]; // 1x1 preview for lineTile
+  } else if (currentTool === "cliff") {
     cursorPreviewCells = getCellsInRectBrushArea(x, y, 3, 5, MAP_SIZE);
   } else {
     const brushSize = currentTool === "water" ? 3 : 2;
@@ -300,6 +310,10 @@ const deadTree1Button = document.getElementById("deadTree-1-tool");
 const waterToolButton = document.getElementById("water-tool");
 const cliffToolButton = document.getElementById("cliff-tool");
 const eraserToolButton = document.getElementById("eraser-tool");
+const lineTile1Button = document.getElementById("lineTile-1-tool");
+const lineTile2Button = document.getElementById("lineTile-2-tool");
+const lineTile3Button = document.getElementById("lineTile-3-tool");
+const lineTile4Button = document.getElementById("lineTile-4-tool");
 
 // Tool selection handlers
 function setActiveTool(tool) {
@@ -313,6 +327,10 @@ function setActiveTool(tool) {
   waterToolButton.classList.toggle("active", tool === "water");
   cliffToolButton.classList.toggle("active", tool === "cliff");
   eraserToolButton.classList.toggle("active", tool === "eraser");
+  lineTile1Button.classList.toggle("active", tool === "lineTile-1");
+  lineTile2Button.classList.toggle("active", tool === "lineTile-2");
+  lineTile3Button.classList.toggle("active", tool === "lineTile-3");
+  lineTile4Button.classList.toggle("active", tool === "lineTile-4");
 }
 
 tree1Button.addEventListener("click", () => setActiveTool("tree-1"));
@@ -324,6 +342,10 @@ deadTree1Button.addEventListener("click", () => setActiveTool("deadTree-1"));
 waterToolButton.addEventListener("click", () => setActiveTool("water"));
 cliffToolButton.addEventListener("click", () => setActiveTool("cliff"));
 eraserToolButton.addEventListener("click", () => setActiveTool("eraser"));
+lineTile1Button.addEventListener("click", () => setActiveTool("lineTile-1"));
+lineTile2Button.addEventListener("click", () => setActiveTool("lineTile-2"));
+lineTile3Button.addEventListener("click", () => setActiveTool("lineTile-3"));
+lineTile4Button.addEventListener("click", () => setActiveTool("lineTile-4"));
 
 // Helper function to get available canvas height
 function getCanvasHeight() {
@@ -395,6 +417,7 @@ baseLayer.cliffTileMap = generateCliffTileMap(
 
 baseLayer.pineValueMap = generateEmptyValueMap(MAP_SIZE, 1); // All 1s = no pines initially
 baseLayer.deadTreeValueMap = generateEmptyValueMap(MAP_SIZE, 1); // All 1s = no dead trees initially
+baseLayer.lineTileValueMap = generateEmptyValueMap(MAP_SIZE, 0);
 
 // Clear trees, pines, and dead trees from water areas
 baseLayer.treeValueMap = clearTreesFromWater(
@@ -412,6 +435,7 @@ baseLayer.deadTreeValueMap = clearDeadTreesFromWater(
 
 baseLayer.pineTileMap = generatePineTileMap(baseLayer.pineValueMap);
 baseLayer.deadTreeTileMap = generateDeadTreeTileMap(baseLayer.deadTreeValueMap);
+baseLayer.lineTileTileMap = generateLineTileTileMap(baseLayer.lineTileValueMap);
 
 baseLayer.treeTileMap = generateTreeTileMap(baseLayer.treeValueMap);
 
@@ -526,6 +550,19 @@ function handleMouseDown(event) {
   isDrawing = true;
   paintedCellsInStroke = new Set();
 
+  // LineTile tool: set start cell, early return (no continuous painting)
+  if (isLineTileTool(currentTool)) {
+    const rect = canvas.getBoundingClientRect();
+    const worldPixelX = (event.clientX - rect.left) + camera.x;
+    const worldPixelY = (event.clientY - rect.top) + camera.y;
+    const { x, y } = pixelToGridCoordinate(worldPixelX, worldPixelY, BOX_SIZE * zoom);
+    if (x >= 0 && x < MAP_SIZE && y >= 0 && y < MAP_SIZE) {
+      lineTileStartCell = { x, y };
+      lineTilePreviewCells = [{ x, y }];
+    }
+    return;
+  }
+
   // Paint the initial cells with brush
   const layer = layers[strokeTargetLayerIndex];
   const result = paintCellAtPosition({
@@ -538,6 +575,7 @@ function handleMouseDown(event) {
     cliffValueMap: layer.cliffValueMap,
     pineValueMap: layer.pineValueMap,
     deadTreeValueMap: layer.deadTreeValueMap,
+    lineTileValueMap: layer.lineTileValueMap,
     camera,
     zoom,
     paintedCellsInStroke,
@@ -545,6 +583,7 @@ function handleMouseDown(event) {
   });
   layer.pineValueMap = result.pineValueMap;
   layer.deadTreeValueMap = result.deadTreeValueMap;
+  layer.lineTileValueMap = result.lineTileValueMap;
 }
 
 // Handle mouse move to continue painting
@@ -567,6 +606,18 @@ function handleMouseMove(event) {
     return;
   }
 
+  // LineTile tool: compute preview line from start to current position
+  if (isLineTileTool(currentTool) && lineTileStartCell) {
+    const rect = canvas.getBoundingClientRect();
+    const worldPixelX = (event.clientX - rect.left) + camera.x;
+    const worldPixelY = (event.clientY - rect.top) + camera.y;
+    const { x, y } = pixelToGridCoordinate(worldPixelX, worldPixelY, BOX_SIZE * zoom);
+    const endX = Math.max(0, Math.min(MAP_SIZE - 1, x));
+    const endY = Math.max(0, Math.min(MAP_SIZE - 1, y));
+    lineTilePreviewCells = getBresenhamLine(lineTileStartCell.x, lineTileStartCell.y, endX, endY);
+    return;
+  }
+
   // Paint using the stroke target layer
   const layer = layers[strokeTargetLayerIndex];
   const result = paintCellAtPosition({
@@ -579,6 +630,7 @@ function handleMouseMove(event) {
     cliffValueMap: layer.cliffValueMap,
     pineValueMap: layer.pineValueMap,
     deadTreeValueMap: layer.deadTreeValueMap,
+    lineTileValueMap: layer.lineTileValueMap,
     camera,
     zoom,
     paintedCellsInStroke,
@@ -586,6 +638,7 @@ function handleMouseMove(event) {
   });
   layer.pineValueMap = result.pineValueMap;
   layer.deadTreeValueMap = result.deadTreeValueMap;
+  layer.lineTileValueMap = result.lineTileValueMap;
 }
 
 // Handle mouse up to finish painting and rerun iterations
@@ -606,6 +659,30 @@ function handleMouseUp(event) {
   paintedCellsInStroke = new Set();
 
   const layer = layers[strokeTargetLayerIndex];
+
+  // Commit lineTile line if drawing with lineTile tool
+  if (isLineTileTool(currentTool) && lineTileStartCell && lineTilePreviewCells.length > 0) {
+    const lineTileType = getLineTileType(currentTool);
+    const lineResult = paintLineTileLine(lineTilePreviewCells, lineTileType, {
+      lineTileValueMap: layer.lineTileValueMap,
+      treeValueMap: layer.treeValueMap,
+      pineValueMap: layer.pineValueMap,
+      deadTreeValueMap: layer.deadTreeValueMap,
+      waterValueMap: layer.waterValueMap,
+      cliffValueMap: layer.cliffValueMap,
+      groundTileMap: layer.groundTileMap,
+    });
+    layer.lineTileValueMap = lineResult.lineTileValueMap;
+    layer.treeValueMap = lineResult.treeValueMap;
+    layer.pineValueMap = lineResult.pineValueMap;
+    layer.deadTreeValueMap = lineResult.deadTreeValueMap;
+    layer.waterValueMap = lineResult.waterValueMap;
+    layer.cliffValueMap = lineResult.cliffValueMap;
+    layer.lineTileTileMap = generateLineTileTileMap(layer.lineTileValueMap);
+
+    lineTileStartCell = null;
+    lineTilePreviewCells = [];
+  }
 
   // Process cliffs
   layer.cliffValueMap = cleanupCliffArtifacts(layer.cliffValueMap);
@@ -683,6 +760,11 @@ function handleMouseUp(event) {
   );
   layer.deadTreeTileMap = generateDeadTreeTileMap(layer.deadTreeValueMap);
 
+  // Regenerate lineTile tile map (other tools may have cleared lineTile cells)
+  if (layer.lineTileValueMap) {
+    layer.lineTileTileMap = generateLineTileTileMap(layer.lineTileValueMap);
+  }
+
   // Sync layer stack
   layers = syncLayerStack(layers, strokeTargetLayerIndex);
   updateLayerDebugPanel();
@@ -727,6 +809,20 @@ function handleTouchStart(event) {
     // Update cursor preview for touch
     updateCursorPreview(event.touches[0]);
 
+    // LineTile tool: set start cell, early return
+    if (isLineTileTool(currentTool)) {
+      const touch = event.touches[0];
+      const rect = canvas.getBoundingClientRect();
+      const worldPixelX = (touch.clientX - rect.left) + camera.x;
+      const worldPixelY = (touch.clientY - rect.top) + camera.y;
+      const { x, y } = pixelToGridCoordinate(worldPixelX, worldPixelY, BOX_SIZE * zoom);
+      if (x >= 0 && x < MAP_SIZE && y >= 0 && y < MAP_SIZE) {
+        lineTileStartCell = { x, y };
+        lineTilePreviewCells = [{ x, y }];
+      }
+      return;
+    }
+
     const layer = layers[strokeTargetLayerIndex];
     paintCellAtPosition({
       canvas,
@@ -738,6 +834,7 @@ function handleTouchStart(event) {
       cliffValueMap: layer.cliffValueMap,
       pineValueMap: layer.pineValueMap,
       deadTreeValueMap: layer.deadTreeValueMap,
+      lineTileValueMap: layer.lineTileValueMap,
       camera,
       zoom,
       paintedCellsInStroke,
@@ -788,6 +885,19 @@ function handleTouchMove(event) {
   // Update cursor preview for touch
   updateCursorPreview(event.touches[0]);
 
+  // LineTile tool: compute preview line
+  if (isLineTileTool(currentTool) && lineTileStartCell) {
+    const touch = event.touches[0];
+    const rect = canvas.getBoundingClientRect();
+    const worldPixelX = (touch.clientX - rect.left) + camera.x;
+    const worldPixelY = (touch.clientY - rect.top) + camera.y;
+    const { x, y } = pixelToGridCoordinate(worldPixelX, worldPixelY, BOX_SIZE * zoom);
+    const endX = Math.max(0, Math.min(MAP_SIZE - 1, x));
+    const endY = Math.max(0, Math.min(MAP_SIZE - 1, y));
+    lineTilePreviewCells = getBresenhamLine(lineTileStartCell.x, lineTileStartCell.y, endX, endY);
+    return;
+  }
+
   const layer = layers[strokeTargetLayerIndex];
   paintCellAtPosition({
     canvas,
@@ -799,6 +909,7 @@ function handleTouchMove(event) {
     cliffValueMap: layer.cliffValueMap,
     pineValueMap: layer.pineValueMap,
     deadTreeValueMap: layer.deadTreeValueMap,
+    lineTileValueMap: layer.lineTileValueMap,
     camera,
     zoom,
     paintedCellsInStroke,
@@ -905,6 +1016,7 @@ function regenerateMap(newSeed) {
   );
   baseLayer.pineValueMap = generateEmptyValueMap(MAP_SIZE, 1); // All 1s = no pines initially
   baseLayer.deadTreeValueMap = generateEmptyValueMap(MAP_SIZE, 1); // All 1s = no dead trees initially
+  baseLayer.lineTileValueMap = generateEmptyValueMap(MAP_SIZE, 0);
 
   // Clear trees, pines, and dead trees from water areas
   baseLayer.treeValueMap = clearTreesFromWater(
@@ -924,6 +1036,7 @@ function regenerateMap(newSeed) {
   baseLayer.deadTreeTileMap = generateDeadTreeTileMap(
     baseLayer.deadTreeValueMap,
   );
+  baseLayer.lineTileTileMap = generateLineTileTileMap(baseLayer.lineTileValueMap);
   baseLayer.treeTileMap = generateTreeTileMap(baseLayer.treeValueMap);
 
   layers = [baseLayer];
@@ -994,6 +1107,7 @@ function animate() {
     camera,
     zoom,
     cursorPreviewCells,
+    lineTilePreviewCells,
   );
 
   requestAnimationFrame(animate);
