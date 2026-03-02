@@ -1,4 +1,5 @@
 import { LINE_TILE_TILES } from "./lineTileTileConstants.js";
+import { getLineTileShape } from "./getLineTileShape.js";
 
 /**
  * Converts a lineTileValueMap to a tile map for rendering.
@@ -18,7 +19,8 @@ export function generateLineTileTileMap(lineTileValueMap) {
       const cell = lineTileValueMap[y][x];
       if (cell.value === 1) {
         const type = cell.lineTileType || 1;
-        const tileData = LINE_TILE_TILES[type];
+        const shape = getLineTileShape(lineTileValueMap, x, y);
+        const tileData = LINE_TILE_TILES[type]?.[shape];
         tileMap[y][x] = {
           tile: type,
           isLineTile: true,

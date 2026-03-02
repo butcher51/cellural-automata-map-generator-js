@@ -1,7 +1,10 @@
 import { describe, it, expect } from "vitest";
 import { generateLineTileTileMap } from "./generateLineTileTileMap.js";
 import { generateEmptyValueMap } from "./generateEmptyValueMap.js";
-import { LINE_TILE_TILES } from "./lineTileTileConstants.js";
+import {
+  LINE_TILE_TILES,
+  LINE_TILE_SHAPES,
+} from "./lineTileTileConstants.js";
 
 describe("generateLineTileTileMap", () => {
   it("produces tile 0 and null spritePosition for non-lineTile cells", () => {
@@ -21,7 +24,10 @@ describe("generateLineTileTileMap", () => {
 
     expect(result[1][1].tile).toBe(2);
     expect(result[1][1].isLineTile).toBe(true);
-    expect(result[1][1].spritePosition).toEqual(LINE_TILE_TILES[2].spritePosition);
+    // Isolated tile → HORIZONTAL shape
+    expect(result[1][1].spritePosition).toEqual(
+      LINE_TILE_TILES[2][LINE_TILE_SHAPES.HORIZONTAL].spritePosition
+    );
   });
 
   it("handles all lineTile types (1-4)", () => {
@@ -78,5 +84,41 @@ describe("generateLineTileTileMap", () => {
     // non-lineTile cells
     expect(result[1][1].tile).toBe(0);
     expect(result[1][1].isLineTile).toBeUndefined();
+  });
+
+  it("uses shape-based spritePosition from neighbor detection", () => {
+    const valueMap = generateEmptyValueMap(3, 0);
+    // Create an L-shape: center + right + bottom → CORNER_RIGHT_BOTTOM
+    valueMap[1][1].value = 1;
+    valueMap[1][1].lineTileType = 1;
+    valueMap[1][2].value = 1;
+    valueMap[1][2].lineTileType = 1;
+    valueMap[2][1].value = 1;
+    valueMap[2][1].lineTileType = 1;
+
+    const result = generateLineTileTileMap(valueMap);
+
+    // Center tile (1,1) has right and bottom neighbors → CORNER_RIGHT_BOTTOM
+    expect(result[1][1].spritePosition).toEqual(
+      LINE_TILE_TILES[1][LINE_TILE_SHAPES.CORNER_RIGHT_BOTTOM].spritePosition
+    );
+  });
+
+  it("produces correct shape for horizontal line segment", () => {
+    const valueMap = generateEmptyValueMap(3, 0);
+    // Horizontal line: left-center-right
+    valueMap[1][0].value = 1;
+    valueMap[1][0].lineTileType = 2;
+    valueMap[1][1].value = 1;
+    valueMap[1][1].lineTileType = 2;
+    valueMap[1][2].value = 1;
+    valueMap[1][2].lineTileType = 2;
+
+    const result = generateLineTileTileMap(valueMap);
+
+    // Center tile has left and right neighbors → HORIZONTAL
+    expect(result[1][1].spritePosition).toEqual(
+      LINE_TILE_TILES[2][LINE_TILE_SHAPES.HORIZONTAL].spritePosition
+    );
   });
 });
