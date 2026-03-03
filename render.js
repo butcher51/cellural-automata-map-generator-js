@@ -8,6 +8,8 @@ const LINE_TILE_COLORS = {
   2: "#A0522D",
   3: "#6B4226",
   4: "#CD853F",
+  5: "#708090",
+  6: "#8B7355",
 };
 
 export function render(layers, drawMap, ctx, boxSize, numberSprite, tileMapSprite, cameraOffset, zoom, cursorPreviewCells, lineTilePreviewCells) {

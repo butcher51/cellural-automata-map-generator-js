@@ -30,9 +30,9 @@ describe("generateLineTileTileMap", () => {
     );
   });
 
-  it("handles all lineTile types (1-4)", () => {
-    const valueMap = generateEmptyValueMap(4, 0);
-    for (let i = 0; i < 4; i++) {
+  it("handles all lineTile types (1-6)", () => {
+    const valueMap = generateEmptyValueMap(6, 0);
+    for (let i = 0; i < 6; i++) {
       valueMap[0][i].value = 1;
       valueMap[0][i].lineTileType = i + 1;
     }
@@ -43,6 +43,8 @@ describe("generateLineTileTileMap", () => {
     expect(result[0][1].tile).toBe(2);
     expect(result[0][2].tile).toBe(3);
     expect(result[0][3].tile).toBe(4);
+    expect(result[0][4].tile).toBe(5);
+    expect(result[0][5].tile).toBe(6);
   });
 
   it("output dimensions match input", () => {

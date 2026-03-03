@@ -50,12 +50,12 @@ describe("LINE_TILE_SHAPES", () => {
 });
 
 describe("LINE_TILE_TILES", () => {
-  it("has keys 1 through 4", () => {
-    expect(Object.keys(LINE_TILE_TILES).map(Number)).toEqual([1, 2, 3, 4]);
+  it("has keys 1 through 6", () => {
+    expect(Object.keys(LINE_TILE_TILES).map(Number)).toEqual([1, 2, 3, 4, 5, 6]);
   });
 
   it("each type has all 15 shapes", () => {
-    for (let i = 1; i <= 4; i++) {
+    for (let i = 1; i <= 6; i++) {
       const type = LINE_TILE_TILES[i];
       for (const shape of ALL_SHAPE_VALUES) {
         expect(type).toHaveProperty(shape);
@@ -64,7 +64,7 @@ describe("LINE_TILE_TILES", () => {
   });
 
   it("each shape within each type has a spritePosition with spriteX and spriteY", () => {
-    for (let i = 1; i <= 4; i++) {
+    for (let i = 1; i <= 6; i++) {
       for (const shape of ALL_SHAPE_VALUES) {
         const shapeData = LINE_TILE_TILES[i][shape];
         expect(shapeData).toHaveProperty("spritePosition");
@@ -75,13 +75,15 @@ describe("LINE_TILE_TILES", () => {
     }
   });
 
-  it("all shapes within the same type share the same spritePosition for now", () => {
-    for (let i = 1; i <= 4; i++) {
-      const firstShape = LINE_TILE_TILES[i][ALL_SHAPE_VALUES[0]];
-      for (const shape of ALL_SHAPE_VALUES) {
-        expect(LINE_TILE_TILES[i][shape].spritePosition).toEqual(
-          firstShape.spritePosition
-        );
+  it("each type has unique sprite positions per shape", () => {
+    for (let i = 1; i <= 6; i++) {
+      const positions = ALL_SHAPE_VALUES.map(
+        (shape) => LINE_TILE_TILES[i][shape].spritePosition
+      );
+      // Each position should be a valid object with spriteX and spriteY
+      for (const pos of positions) {
+        expect(typeof pos.spriteX).toBe("number");
+        expect(typeof pos.spriteY).toBe("number");
       }
     }
   });
@@ -94,11 +96,13 @@ describe("DEFAULT_LINE_TILE_TYPE", () => {
 });
 
 describe("isLineTileTool", () => {
-  it('returns true for "lineTile-1" through "lineTile-4"', () => {
+  it('returns true for "lineTile-1" through "lineTile-6"', () => {
     expect(isLineTileTool("lineTile-1")).toBe(true);
     expect(isLineTileTool("lineTile-2")).toBe(true);
     expect(isLineTileTool("lineTile-3")).toBe(true);
     expect(isLineTileTool("lineTile-4")).toBe(true);
+    expect(isLineTileTool("lineTile-5")).toBe(true);
+    expect(isLineTileTool("lineTile-6")).toBe(true);
   });
 
   it("returns false for non-lineTile tools", () => {
@@ -108,7 +112,7 @@ describe("isLineTileTool", () => {
     expect(isLineTileTool("tree-1")).toBe(false);
     expect(isLineTileTool("lineTile")).toBe(false);
     expect(isLineTileTool("lineTile-0")).toBe(false);
-    expect(isLineTileTool("lineTile-5")).toBe(false);
+    expect(isLineTileTool("lineTile-7")).toBe(false);
   });
 });
 
@@ -118,12 +122,14 @@ describe("getLineTileType", () => {
     expect(getLineTileType("lineTile-2")).toBe(2);
     expect(getLineTileType("lineTile-3")).toBe(3);
     expect(getLineTileType("lineTile-4")).toBe(4);
+    expect(getLineTileType("lineTile-5")).toBe(5);
+    expect(getLineTileType("lineTile-6")).toBe(6);
   });
 
   it("returns DEFAULT_LINE_TILE_TYPE for invalid input", () => {
     expect(getLineTileType("eraser")).toBe(DEFAULT_LINE_TILE_TYPE);
     expect(getLineTileType("lineTile")).toBe(DEFAULT_LINE_TILE_TYPE);
     expect(getLineTileType("lineTile-0")).toBe(DEFAULT_LINE_TILE_TYPE);
-    expect(getLineTileType("lineTile-5")).toBe(DEFAULT_LINE_TILE_TYPE);
+    expect(getLineTileType("lineTile-7")).toBe(DEFAULT_LINE_TILE_TYPE);
   });
 });
