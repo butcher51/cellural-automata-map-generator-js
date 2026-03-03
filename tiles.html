@@ -11,7 +11,6 @@
         body {
             margin: 0;
             padding: 0;
-            overflow: hidden;
             display: flex;
             flex-direction: column;
             height: 100vh;
@@ -24,17 +23,32 @@
             font-family: monospace;
             font-size: 16px;
             border-bottom: 1px solid #333;
+            flex-shrink: 0;
         }
         #tile-index {
             color: #4fc3f7;
         }
+        #tileset-name {
+            color: #81c784;
+        }
         #canvas-container {
             flex: 1;
             display: flex;
-            justify-content: center;
-            align-items: flex-start;
+            gap: 24px;
             overflow: auto;
             padding: 20px;
+        }
+        .tileset-column {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            flex-shrink: 0;
+        }
+        .tileset-label {
+            color: #aaa;
+            font-family: monospace;
+            font-size: 14px;
+            margin-bottom: 8px;
         }
         canvas {
             border: 1px solid #333;
@@ -45,11 +59,9 @@
 </head>
 <body>
     <div id="info-bar">
-        Tile Index: <span id="tile-index">—</span>
+        Tileset: <span id="tileset-name">—</span> &nbsp;|&nbsp; Tile Index: <span id="tile-index">—</span>
     </div>
-    <div id="canvas-container">
-        <canvas id="canvas"></canvas>
-    </div>
+    <div id="canvas-container"></div>
     <script type="module" src="tiles.js"></script>
 </body>
 </html>

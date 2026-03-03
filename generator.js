@@ -44,6 +44,7 @@ import { paintCellAtPosition } from "./paintCellAtPosition.js";
 import { parseHash } from "./parseHash.js";
 import { render } from "./render.js";
 import { syncLayerStack } from "./syncLayerStack.js";
+import { TILESETS } from "./tilesetConfig.js";
 import { initZoomPrevention } from "./zoomPrevention.js";
 
 // State for drag-to-paint interaction
@@ -73,8 +74,11 @@ let lineTilePreviewCells = []; // line preview cells for rendering
 const numberSprite = new Image();
 numberSprite.src = "./assets/numbers.png";
 
-const tileMapSprite = new Image();
-tileMapSprite.src = "./assets/overworld.png";
+const tilesetImages = TILESETS.map((t) => {
+  const img = new Image();
+  img.src = t.path;
+  return img;
+});
 
 // Initialize zoom prevention
 initZoomPrevention();
@@ -492,10 +496,13 @@ Promise.allSettled([
     numberSprite.onload = resolve;
     numberSprite.onerror = reject;
   }),
-  new Promise((resolve, reject) => {
-    tileMapSprite.onload = resolve;
-    tileMapSprite.onerror = reject;
-  }),
+  ...tilesetImages.map(
+    (img) =>
+      new Promise((resolve, reject) => {
+        img.onload = resolve;
+        img.onerror = reject;
+      }),
+  ),
 ]).then(() => {
   spriteLoaded = true;
   animate();
@@ -1109,7 +1116,7 @@ function animate() {
     ctx,
     BOX_SIZE,
     numberSprite,
-    tileMapSprite,
+    tilesetImages,
     camera,
     zoom,
     cursorPreviewCells,

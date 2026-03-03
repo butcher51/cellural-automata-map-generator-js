@@ -12,7 +12,7 @@ const LINE_TILE_COLORS = {
   6: "#8B7355",
 };
 
-export function render(layers, drawMap, ctx, boxSize, numberSprite, tileMapSprite, cameraOffset, zoom, cursorPreviewCells, lineTilePreviewCells) {
+export function render(layers, drawMap, ctx, boxSize, numberSprite, tilesetImages, cameraOffset, zoom, cursorPreviewCells, lineTilePreviewCells) {
   const scaledSize = boxSize * zoom;
   const sortedLayers = sortLayersByOrder(layers);
 
@@ -28,6 +28,7 @@ export function render(layers, drawMap, ctx, boxSize, numberSprite, tileMapSprit
 
       let spriteX = null;
       let spriteY = null;
+      let tilesetIndex = 0;
       let lineTileType = null;
 
       for (let i = 0; i < sortedLayers.length; i++) {
@@ -37,10 +38,12 @@ export function render(layers, drawMap, ctx, boxSize, numberSprite, tileMapSprit
         // Compute this layer's sprite
         let layerSpriteX = null;
         let layerSpriteY = null;
+        let layerTilesetIndex = 0;
 
         if (layer.groundTileMap && layer.groundTileMap[y][x]) {
           layerSpriteX = layer.groundTileMap[y][x].spritePosition.spriteX;
           layerSpriteY = layer.groundTileMap[y][x].spritePosition.spriteY;
+          layerTilesetIndex = layer.groundTileMap[y][x].spritePosition.tilesetIndex ?? 0;
         }
 
         // Check for lineTile (rendered above ground, below foliage)
@@ -49,6 +52,7 @@ export function render(layers, drawMap, ctx, boxSize, numberSprite, tileMapSprit
           if (lineTile.spritePosition) {
             layerSpriteX = lineTile.spritePosition.spriteX;
             layerSpriteY = lineTile.spritePosition.spriteY;
+            layerTilesetIndex = lineTile.spritePosition.tilesetIndex ?? 0;
           }
           lineTileType = lineTile.tile;
         }
@@ -60,6 +64,7 @@ export function render(layers, drawMap, ctx, boxSize, numberSprite, tileMapSprit
         if (treeTile && treeTile.tile !== 0) {
           layerSpriteX = treeTile.spritePosition.spriteX;
           layerSpriteY = treeTile.spritePosition.spriteY;
+          layerTilesetIndex = treeTile.spritePosition.tilesetIndex ?? 0;
           hasOverride = true;
           lineTileType = null;
         }
@@ -68,6 +73,7 @@ export function render(layers, drawMap, ctx, boxSize, numberSprite, tileMapSprit
         if (pineTile && pineTile.tile !== 0) {
           layerSpriteX = pineTile.spritePosition.spriteX;
           layerSpriteY = pineTile.spritePosition.spriteY;
+          layerTilesetIndex = pineTile.spritePosition.tilesetIndex ?? 0;
           hasOverride = true;
           lineTileType = null;
         }
@@ -76,6 +82,7 @@ export function render(layers, drawMap, ctx, boxSize, numberSprite, tileMapSprit
         if (deadTreeTile && deadTreeTile.tile !== 0) {
           layerSpriteX = deadTreeTile.spritePosition.spriteX;
           layerSpriteY = deadTreeTile.spritePosition.spriteY;
+          layerTilesetIndex = deadTreeTile.spritePosition.tilesetIndex ?? 0;
           hasOverride = true;
           lineTileType = null;
         }
@@ -84,6 +91,7 @@ export function render(layers, drawMap, ctx, boxSize, numberSprite, tileMapSprit
         if (waterTile && waterTile.tile !== 0) {
           layerSpriteX = waterTile.spritePosition.spriteX;
           layerSpriteY = waterTile.spritePosition.spriteY;
+          layerTilesetIndex = waterTile.spritePosition.tilesetIndex ?? 0;
           hasOverride = true;
           lineTileType = null;
         }
@@ -92,6 +100,7 @@ export function render(layers, drawMap, ctx, boxSize, numberSprite, tileMapSprit
         if (deepWaterTile && deepWaterTile.tileIndex) {
           layerSpriteX = deepWaterTile.spritePosition.spriteX;
           layerSpriteY = deepWaterTile.spritePosition.spriteY;
+          layerTilesetIndex = deepWaterTile.spritePosition.tilesetIndex ?? 0;
           hasOverride = true;
           lineTileType = null;
         }
@@ -100,6 +109,7 @@ export function render(layers, drawMap, ctx, boxSize, numberSprite, tileMapSprit
         if (cliffTile && cliffTile.tileIndex) {
           layerSpriteX = cliffTile.spritePosition.spriteX;
           layerSpriteY = cliffTile.spritePosition.spriteY;
+          layerTilesetIndex = cliffTile.spritePosition.tilesetIndex ?? 0;
           hasOverride = true;
           lineTileType = null;
         }
@@ -110,20 +120,22 @@ export function render(layers, drawMap, ctx, boxSize, numberSprite, tileMapSprit
           if (layerSpriteX !== null) {
             spriteX = layerSpriteX;
             spriteY = layerSpriteY;
+            tilesetIndex = layerTilesetIndex;
           }
         } else {
           const hasGround = layer.groundTileMap && layer.groundTileMap[y][x] != null;
           if (hasGround && layerSpriteX !== null) {
             spriteX = layerSpriteX;
             spriteY = layerSpriteY;
+            tilesetIndex = layerTilesetIndex;
           }
         }
       }
 
       // Draw final composited sprite
-      if (spriteX !== null) {
+      if (spriteX !== null && tilesetImages[tilesetIndex]) {
         ctx.drawImage(
-          tileMapSprite,
+          tilesetImages[tilesetIndex],
           spriteX,
           spriteY,
           8,
