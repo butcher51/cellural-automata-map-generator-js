@@ -6,7 +6,8 @@ import {
   BOX_SIZE,
   CAMERA_SPEED,
   ZOOM as DEFAULT_ZOOM,
-  ITERATIONS,
+  DRAW_ITERATIONS,
+  INITIAL_ITERATIONS,
   MAP_SIZE,
   SEED,
   setSeed,
@@ -19,16 +20,15 @@ import { generateDeepWaterValueMap } from "./generateDeepWaterValueMap.js";
 import { generateDrawMap } from "./generateDrawMap.js";
 import { generateEmptyValueMap } from "./generateEmptyValueMap.js";
 import { generateGroundTileMap } from "./generateGroundMap.js";
+import { generateLineTileTileMap } from "./generateLineTileTileMap.js";
 import { generatePineTileMap } from "./generatePineTileMap.js";
 import { generateTreeTileMap } from "./generateTreeTileMap.js";
 import { generateWaterTileMap } from "./generateWaterTileMap.js";
 import { generateWaterValueMap } from "./generateWaterValueMap.js";
-import { generateLineTileTileMap } from "./generateLineTileTileMap.js";
 import { getBresenhamLine } from "./getBresenhamLine.js";
 import { initSeed } from "./initSeed.js";
 import { createLayer } from "./layer.js";
-import { isLineTileTool, getLineTileType } from "./lineTileTileConstants.js";
-import { paintLineTileLine } from "./paintLineTileLine.js";
+import { getLineTileType, isLineTileTool } from "./lineTileTileConstants.js";
 import {
   applyOrganicIterations,
   clampCamera,
@@ -41,6 +41,7 @@ import {
   updateCamera,
 } from "./map-utils.js";
 import { paintCellAtPosition } from "./paintCellAtPosition.js";
+import { paintLineTileLine } from "./paintLineTileLine.js";
 import { parseHash } from "./parseHash.js";
 import { render } from "./render.js";
 import { syncLayerStack } from "./syncLayerStack.js";
@@ -397,7 +398,10 @@ const baseLayer = createLayer("layer-0", "Base Layer", 0);
 
 baseLayer.groundTileMap = generateGroundTileMap();
 
-baseLayer.treeValueMap = applyOrganicIterations(generateNoiseMap(MAP_SIZE), 10);
+baseLayer.treeValueMap = applyOrganicIterations(
+  generateNoiseMap(MAP_SIZE),
+  INITIAL_ITERATIONS,
+);
 
 baseLayer.waterValueMap = generateWaterValueMap();
 baseLayer.waterValueMap = cleanupWaterArtifacts(baseLayer.waterValueMap);
@@ -566,9 +570,13 @@ function handleMouseDown(event) {
   // LineTile tool: set start cell, early return (no continuous painting)
   if (isLineTileTool(currentTool)) {
     const rect = canvas.getBoundingClientRect();
-    const worldPixelX = (event.clientX - rect.left) + camera.x;
-    const worldPixelY = (event.clientY - rect.top) + camera.y;
-    const { x, y } = pixelToGridCoordinate(worldPixelX, worldPixelY, BOX_SIZE * zoom);
+    const worldPixelX = event.clientX - rect.left + camera.x;
+    const worldPixelY = event.clientY - rect.top + camera.y;
+    const { x, y } = pixelToGridCoordinate(
+      worldPixelX,
+      worldPixelY,
+      BOX_SIZE * zoom,
+    );
     if (x >= 0 && x < MAP_SIZE && y >= 0 && y < MAP_SIZE) {
       lineTileStartCell = { x, y };
       lineTilePreviewCells = [{ x, y }];
@@ -622,12 +630,21 @@ function handleMouseMove(event) {
   // LineTile tool: compute preview line from start to current position
   if (isLineTileTool(currentTool) && lineTileStartCell) {
     const rect = canvas.getBoundingClientRect();
-    const worldPixelX = (event.clientX - rect.left) + camera.x;
-    const worldPixelY = (event.clientY - rect.top) + camera.y;
-    const { x, y } = pixelToGridCoordinate(worldPixelX, worldPixelY, BOX_SIZE * zoom);
+    const worldPixelX = event.clientX - rect.left + camera.x;
+    const worldPixelY = event.clientY - rect.top + camera.y;
+    const { x, y } = pixelToGridCoordinate(
+      worldPixelX,
+      worldPixelY,
+      BOX_SIZE * zoom,
+    );
     const endX = Math.max(0, Math.min(MAP_SIZE - 1, x));
     const endY = Math.max(0, Math.min(MAP_SIZE - 1, y));
-    lineTilePreviewCells = getBresenhamLine(lineTileStartCell.x, lineTileStartCell.y, endX, endY);
+    lineTilePreviewCells = getBresenhamLine(
+      lineTileStartCell.x,
+      lineTileStartCell.y,
+      endX,
+      endY,
+    );
     return;
   }
 
@@ -674,7 +691,11 @@ function handleMouseUp(event) {
   const layer = layers[strokeTargetLayerIndex];
 
   // Commit lineTile line if drawing with lineTile tool
-  if (isLineTileTool(currentTool) && lineTileStartCell && lineTilePreviewCells.length > 0) {
+  if (
+    isLineTileTool(currentTool) &&
+    lineTileStartCell &&
+    lineTilePreviewCells.length > 0
+  ) {
     const lineTileType = getLineTileType(currentTool);
     const lineResult = paintLineTileLine(lineTilePreviewCells, lineTileType, {
       lineTileValueMap: layer.lineTileValueMap,
@@ -739,7 +760,10 @@ function handleMouseUp(event) {
   );
 
   // Finally process trees
-  layer.treeValueMap = applyOrganicIterations(layer.treeValueMap, ITERATIONS);
+  layer.treeValueMap = applyOrganicIterations(
+    layer.treeValueMap,
+    DRAW_ITERATIONS,
+  );
   layer.treeTileMap = generateTreeTileMap(layer.treeValueMap);
 
   // Clear pines from incompatible terrain
@@ -753,7 +777,10 @@ function handleMouseUp(event) {
   );
 
   // Process pines with organic iterations
-  layer.pineValueMap = applyOrganicIterations(layer.pineValueMap, ITERATIONS);
+  layer.pineValueMap = applyOrganicIterations(
+    layer.pineValueMap,
+    DRAW_ITERATIONS,
+  );
   layer.pineTileMap = generatePineTileMap(layer.pineValueMap);
 
   // Clear dead trees from incompatible terrain
@@ -769,7 +796,7 @@ function handleMouseUp(event) {
   // Process dead trees with organic iterations
   layer.deadTreeValueMap = applyOrganicIterations(
     layer.deadTreeValueMap,
-    ITERATIONS,
+    DRAW_ITERATIONS,
   );
   layer.deadTreeTileMap = generateDeadTreeTileMap(layer.deadTreeValueMap);
 
@@ -826,9 +853,13 @@ function handleTouchStart(event) {
     if (isLineTileTool(currentTool)) {
       const touch = event.touches[0];
       const rect = canvas.getBoundingClientRect();
-      const worldPixelX = (touch.clientX - rect.left) + camera.x;
-      const worldPixelY = (touch.clientY - rect.top) + camera.y;
-      const { x, y } = pixelToGridCoordinate(worldPixelX, worldPixelY, BOX_SIZE * zoom);
+      const worldPixelX = touch.clientX - rect.left + camera.x;
+      const worldPixelY = touch.clientY - rect.top + camera.y;
+      const { x, y } = pixelToGridCoordinate(
+        worldPixelX,
+        worldPixelY,
+        BOX_SIZE * zoom,
+      );
       if (x >= 0 && x < MAP_SIZE && y >= 0 && y < MAP_SIZE) {
         lineTileStartCell = { x, y };
         lineTilePreviewCells = [{ x, y }];
@@ -902,12 +933,21 @@ function handleTouchMove(event) {
   if (isLineTileTool(currentTool) && lineTileStartCell) {
     const touch = event.touches[0];
     const rect = canvas.getBoundingClientRect();
-    const worldPixelX = (touch.clientX - rect.left) + camera.x;
-    const worldPixelY = (touch.clientY - rect.top) + camera.y;
-    const { x, y } = pixelToGridCoordinate(worldPixelX, worldPixelY, BOX_SIZE * zoom);
+    const worldPixelX = touch.clientX - rect.left + camera.x;
+    const worldPixelY = touch.clientY - rect.top + camera.y;
+    const { x, y } = pixelToGridCoordinate(
+      worldPixelX,
+      worldPixelY,
+      BOX_SIZE * zoom,
+    );
     const endX = Math.max(0, Math.min(MAP_SIZE - 1, x));
     const endY = Math.max(0, Math.min(MAP_SIZE - 1, y));
-    lineTilePreviewCells = getBresenhamLine(lineTileStartCell.x, lineTileStartCell.y, endX, endY);
+    lineTilePreviewCells = getBresenhamLine(
+      lineTileStartCell.x,
+      lineTileStartCell.y,
+      endX,
+      endY,
+    );
     return;
   }
 
@@ -1002,7 +1042,7 @@ function regenerateMap(newSeed) {
   baseLayer.groundTileMap = generateGroundTileMap();
   baseLayer.treeValueMap = applyOrganicIterations(
     generateNoiseMap(MAP_SIZE),
-    10,
+    INITIAL_ITERATIONS,
   );
   baseLayer.waterValueMap = generateWaterValueMap();
   baseLayer.waterValueMap = cleanupWaterArtifacts(baseLayer.waterValueMap);
@@ -1049,7 +1089,9 @@ function regenerateMap(newSeed) {
   baseLayer.deadTreeTileMap = generateDeadTreeTileMap(
     baseLayer.deadTreeValueMap,
   );
-  baseLayer.lineTileTileMap = generateLineTileTileMap(baseLayer.lineTileValueMap);
+  baseLayer.lineTileTileMap = generateLineTileTileMap(
+    baseLayer.lineTileValueMap,
+  );
   baseLayer.treeTileMap = generateTreeTileMap(baseLayer.treeValueMap);
 
   layers = [baseLayer];

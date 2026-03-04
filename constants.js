@@ -14,7 +14,8 @@ export const CAMERA_SPEED = 5;
 
 // Number of iterations for cave generation (increased for better formation)
 // Each iteration calculates neighbor counts and applies cave rules
-export const ITERATIONS = 0;
+export const DRAW_ITERATIONS = 0;
+export const INITIAL_ITERATIONS = 10;
 
 // Cave generation thresholds
 // Walls need 4+ wall neighbors to survive, floors need 5+ to become walls
