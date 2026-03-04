@@ -303,10 +303,6 @@ const cliffToolButton = document.getElementById("cliff-tool");
 const eraserToolButton = document.getElementById("eraser-tool");
 const lineTile1Button = document.getElementById("lineTile-1-tool");
 const lineTile2Button = document.getElementById("lineTile-2-tool");
-const lineTile3Button = document.getElementById("lineTile-3-tool");
-const lineTile4Button = document.getElementById("lineTile-4-tool");
-const lineTile5Button = document.getElementById("lineTile-5-tool");
-const lineTile6Button = document.getElementById("lineTile-6-tool");
 
 // Tool selection handlers
 function setActiveTool(tool) {
