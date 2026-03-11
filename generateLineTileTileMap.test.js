@@ -18,33 +18,32 @@ describe("generateLineTileTileMap", () => {
   it("produces tile with lineTileType and isLineTile flag for lineTile cells", () => {
     const valueMap = generateEmptyValueMap(3, 0);
     valueMap[1][1].value = 1;
-    valueMap[1][1].lineTileType = 2;
+    valueMap[1][1].lineTileType = "wallLeft";
 
     const result = generateLineTileTileMap(valueMap);
 
-    expect(result[1][1].tile).toBe(2);
+    expect(result[1][1].tile).toBe("wallLeft");
     expect(result[1][1].isLineTile).toBe(true);
     // Isolated tile → HORIZONTAL shape
     expect(result[1][1].spritePosition).toEqual(
-      LINE_TILE_TILES[2][LINE_TILE_SHAPES.HORIZONTAL].spritePosition
+      LINE_TILE_TILES.wallLeft[LINE_TILE_SHAPES.HORIZONTAL].spritePosition
     );
   });
 
-  it("handles all lineTile types (1-6)", () => {
-    const valueMap = generateEmptyValueMap(6, 0);
-    for (let i = 0; i < 6; i++) {
-      valueMap[0][i].value = 1;
-      valueMap[0][i].lineTileType = i + 1;
-    }
+  it("handles all lineTile types", () => {
+    const valueMap = generateEmptyValueMap(3, 0);
+    valueMap[0][0].value = 1;
+    valueMap[0][0].lineTileType = "road";
+    valueMap[0][1].value = 1;
+    valueMap[0][1].lineTileType = "wallLeft";
+    valueMap[0][2].value = 1;
+    valueMap[0][2].lineTileType = "wallRight";
 
     const result = generateLineTileTileMap(valueMap);
 
-    expect(result[0][0].tile).toBe(1);
-    expect(result[0][1].tile).toBe(2);
-    expect(result[0][2].tile).toBe(3);
-    expect(result[0][3].tile).toBe(4);
-    expect(result[0][4].tile).toBe(5);
-    expect(result[0][5].tile).toBe(6);
+    expect(result[0][0].tile).toBe("road");
+    expect(result[0][1].tile).toBe("wallLeft");
+    expect(result[0][2].tile).toBe("wallRight");
   });
 
   it("output dimensions match input", () => {
@@ -57,30 +56,30 @@ describe("generateLineTileTileMap", () => {
     }
   });
 
-  it("defaults lineTileType to 1 if not set on a value=1 cell", () => {
+  it('defaults lineTileType to "road" if not set on a value=1 cell', () => {
     const valueMap = generateEmptyValueMap(3, 0);
     valueMap[0][0].value = 1;
     // No lineTileType set
 
     const result = generateLineTileTileMap(valueMap);
 
-    expect(result[0][0].tile).toBe(1);
+    expect(result[0][0].tile).toBe("road");
     expect(result[0][0].isLineTile).toBe(true);
   });
 
   it("mixed map with lineTile and non-lineTile cells", () => {
     const valueMap = generateEmptyValueMap(3, 0);
     valueMap[0][0].value = 1;
-    valueMap[0][0].lineTileType = 3;
+    valueMap[0][0].lineTileType = "wallLeft";
     valueMap[2][2].value = 1;
-    valueMap[2][2].lineTileType = 1;
+    valueMap[2][2].lineTileType = "road";
 
     const result = generateLineTileTileMap(valueMap);
 
     // lineTile cells
-    expect(result[0][0].tile).toBe(3);
+    expect(result[0][0].tile).toBe("wallLeft");
     expect(result[0][0].isLineTile).toBe(true);
-    expect(result[2][2].tile).toBe(1);
+    expect(result[2][2].tile).toBe("road");
     expect(result[2][2].isLineTile).toBe(true);
 
     // non-lineTile cells
@@ -92,17 +91,17 @@ describe("generateLineTileTileMap", () => {
     const valueMap = generateEmptyValueMap(3, 0);
     // Create an L-shape: center + right + bottom → CORNER_RIGHT_BOTTOM
     valueMap[1][1].value = 1;
-    valueMap[1][1].lineTileType = 1;
+    valueMap[1][1].lineTileType = "road";
     valueMap[1][2].value = 1;
-    valueMap[1][2].lineTileType = 1;
+    valueMap[1][2].lineTileType = "road";
     valueMap[2][1].value = 1;
-    valueMap[2][1].lineTileType = 1;
+    valueMap[2][1].lineTileType = "road";
 
     const result = generateLineTileTileMap(valueMap);
 
     // Center tile (1,1) has right and bottom neighbors → CORNER_RIGHT_BOTTOM
     expect(result[1][1].spritePosition).toEqual(
-      LINE_TILE_TILES[1][LINE_TILE_SHAPES.CORNER_RIGHT_BOTTOM].spritePosition
+      LINE_TILE_TILES.road[LINE_TILE_SHAPES.CORNER_RIGHT_BOTTOM].spritePosition
     );
   });
 
@@ -110,17 +109,17 @@ describe("generateLineTileTileMap", () => {
     const valueMap = generateEmptyValueMap(3, 0);
     // Horizontal line: left-center-right
     valueMap[1][0].value = 1;
-    valueMap[1][0].lineTileType = 2;
+    valueMap[1][0].lineTileType = "road";
     valueMap[1][1].value = 1;
-    valueMap[1][1].lineTileType = 2;
+    valueMap[1][1].lineTileType = "road";
     valueMap[1][2].value = 1;
-    valueMap[1][2].lineTileType = 2;
+    valueMap[1][2].lineTileType = "road";
 
     const result = generateLineTileTileMap(valueMap);
 
     // Center tile has left and right neighbors → HORIZONTAL
     expect(result[1][1].spritePosition).toEqual(
-      LINE_TILE_TILES[2][LINE_TILE_SHAPES.HORIZONTAL].spritePosition
+      LINE_TILE_TILES.road[LINE_TILE_SHAPES.HORIZONTAL].spritePosition
     );
   });
 });

@@ -1,7 +1,6 @@
-import { createFoliageToolUtils } from "./foliageToolUtils.js";
 import { getTileSpritePosition } from "./getTileSpritePosition.js";
 
-export const DEFAULT_LINE_TILE_TYPE = 1;
+export const DEFAULT_LINE_TILE_TYPE = "road";
 
 export const LINE_TILE_SHAPES = {
   HORIZONTAL: "horizontal",
@@ -33,7 +32,7 @@ function buildLineTileTiles(tiles) {
 }
 
 export const LINE_TILE_TILES = buildLineTileTiles({
-  1: {
+  road: {
     horizontal: 913,
     vertical: 914,
     cornerLeftTop: 987,
@@ -50,24 +49,7 @@ export const LINE_TILE_TILES = buildLineTileTiles({
     tRight: 961,
     middle: 965,
   },
-  2: {
-    horizontal: 919,
-    vertical: 920,
-    cornerLeftTop: 993,
-    cornerLeftBottom: 945,
-    cornerRightTop: 991,
-    cornerRightBottom: 943,
-    endTop: 995,
-    endBottom: 947,
-    endLeft: 972,
-    endRight: 970,
-    tTop: 992,
-    tBottom: 944,
-    tLeft: 967,
-    tRight: 969,
-    middle: 971,
-  },
-  3: {
+  wallLeft: {
     horizontal: 2262,
     vertical: 2285,
     cornerLeftTop: 2406,
@@ -84,7 +66,7 @@ export const LINE_TILE_TILES = buildLineTileTiles({
     tRight: 0,
     middle: 0,
   },
-  4: {
+  wallRight: {
     horizontal: 2263,
     vertical: 2288,
     cornerLeftTop: 2312,
@@ -103,7 +85,17 @@ export const LINE_TILE_TILES = buildLineTileTiles({
   },
 });
 
-const { isTool, getType } = createFoliageToolUtils("lineTile", ["1", "2", "3", "4"], DEFAULT_LINE_TILE_TYPE);
+const VALID_LINE_TILE_TOOLS = new Set([
+  "lineTile-road",
+  "lineTile-wallLeft",
+  "lineTile-wallRight",
+]);
 
-export const isLineTileTool = isTool;
-export const getLineTileType = getType;
+export function isLineTileTool(tool) {
+  return VALID_LINE_TILE_TOOLS.has(tool);
+}
+
+export function getLineTileType(tool) {
+  if (!isLineTileTool(tool)) return DEFAULT_LINE_TILE_TYPE;
+  return tool.split("-")[1];
+}

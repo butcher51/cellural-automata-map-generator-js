@@ -301,10 +301,9 @@ const deadTree1Button = document.getElementById("deadTree-1-tool");
 const waterToolButton = document.getElementById("water-tool");
 const cliffToolButton = document.getElementById("cliff-tool");
 const eraserToolButton = document.getElementById("eraser-tool");
-const lineTile1Button = document.getElementById("lineTile-1-tool");
-const lineTile2Button = document.getElementById("lineTile-2-tool");
-const lineTile3Button = document.getElementById("lineTile-3-tool");
-const lineTile4Button = document.getElementById("lineTile-4-tool");
+const lineTileRoadButton = document.getElementById("lineTile-road-tool");
+const lineTileWallLeftButton = document.getElementById("lineTile-wallLeft-tool");
+const lineTileWallRightButton = document.getElementById("lineTile-wallRight-tool");
 
 // Tool selection handlers
 function setActiveTool(tool) {
@@ -318,10 +317,9 @@ function setActiveTool(tool) {
   waterToolButton.classList.toggle("active", tool === "water");
   cliffToolButton.classList.toggle("active", tool === "cliff");
   eraserToolButton.classList.toggle("active", tool === "eraser");
-  lineTile1Button.classList.toggle("active", tool === "lineTile-1");
-  lineTile2Button.classList.toggle("active", tool === "lineTile-2");
-  lineTile3Button.classList.toggle("active", tool === "lineTile-3");
-  lineTile4Button.classList.toggle("active", tool === "lineTile-4");
+  lineTileRoadButton.classList.toggle("active", tool === "lineTile-road");
+  lineTileWallLeftButton.classList.toggle("active", tool === "lineTile-wallLeft");
+  lineTileWallRightButton.classList.toggle("active", tool === "lineTile-wallRight");
 }
 
 tree1Button.addEventListener("click", () => setActiveTool("tree-1"));
@@ -333,10 +331,9 @@ deadTree1Button.addEventListener("click", () => setActiveTool("deadTree-1"));
 waterToolButton.addEventListener("click", () => setActiveTool("water"));
 cliffToolButton.addEventListener("click", () => setActiveTool("cliff"));
 eraserToolButton.addEventListener("click", () => setActiveTool("eraser"));
-lineTile1Button.addEventListener("click", () => setActiveTool("lineTile-1"));
-lineTile2Button.addEventListener("click", () => setActiveTool("lineTile-2"));
-lineTile3Button.addEventListener("click", () => setActiveTool("lineTile-3"));
-lineTile4Button.addEventListener("click", () => setActiveTool("lineTile-4"));
+lineTileRoadButton.addEventListener("click", () => setActiveTool("lineTile-road"));
+lineTileWallLeftButton.addEventListener("click", () => setActiveTool("lineTile-wallLeft"));
+lineTileWallRightButton.addEventListener("click", () => setActiveTool("lineTile-wallRight"));
 
 // Helper function to get available canvas height
 function getCanvasHeight() {

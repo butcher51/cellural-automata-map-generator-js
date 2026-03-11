@@ -4,12 +4,9 @@ import { sortLayersByOrder } from "./layer.js";
 // Render the map with layers composited bottom-to-top
 // Placeholder colors for lineTile types (brown tones)
 const LINE_TILE_COLORS = {
-  1: "#8B6914",
-  2: "#A0522D",
-  3: "#6B4226",
-  4: "#CD853F",
-  5: "#708090",
-  6: "#8B7355",
+  road: "#8B6914",
+  wallLeft: "#6B4226",
+  wallRight: "#CD853F",
 };
 
 export function render(layers, drawMap, ctx, boxSize, numberSprite, tilesetImages, cameraOffset, zoom, cursorPreviewCells, lineTilePreviewCells) {

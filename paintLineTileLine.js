@@ -5,7 +5,7 @@ import { setCellValue } from "./map-utils.js";
  * Sets lineTileValueMap to 1 with lineTileType metadata at each cell.
  * Clears conflicting terrain (water, cliff, trees, pines, dead trees).
  * @param {Array<{x: number, y: number}>} cells - Array of cells to paint
- * @param {number} lineTileType - The lineTile type (1-4)
+ * @param {string} lineTileType - The lineTile type ("road", "wallLeft", "wallRight")
  * @param {object} maps - Object containing all value maps and groundTileMap
  * @returns {object} Updated maps
  */

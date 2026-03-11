@@ -18,7 +18,7 @@ export function generateLineTileTileMap(lineTileValueMap) {
     for (let x = 0; x < width; x++) {
       const cell = lineTileValueMap[y][x];
       if (cell.value === 1) {
-        const type = cell.lineTileType || 1;
+        const type = cell.lineTileType || "road";
         const shape = getLineTileShape(lineTileValueMap, x, y);
         const tileData = LINE_TILE_TILES[type]?.[shape];
         tileMap[y][x] = {
