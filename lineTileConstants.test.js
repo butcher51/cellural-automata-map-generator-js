@@ -90,9 +90,9 @@ describe("LINE_TILE_TILES", () => {
 });
 
 describe("LINE_TILE_TILES sprite index correctness", () => {
-  it("road middle should map to col1 row40 (center of corner/T-junction block)", () => {
+  it("road middle should map to col4 row40 (center of corner/T-junction block)", () => {
     const pos = LINE_TILE_TILES.road.middle.spritePosition;
-    expect(pos.spriteX).toBe(8);
+    expect(pos.spriteX).toBe(32);
     expect(pos.spriteY).toBe(320);
   });
 });
