@@ -23,7 +23,7 @@ export function createLayer(id, name, order) {
     cliffTileMap: null,
     pineTileMap: null,
     deadTreeTileMap: null,
-    lineTileTileMap: null,
+    lineTileMap: null,
     groundTileMap: null,
   };
 }
@@ -58,7 +58,7 @@ export function getTileMaps(layer) {
     cliffTileMap: layer.cliffTileMap,
     pineTileMap: layer.pineTileMap,
     deadTreeTileMap: layer.deadTreeTileMap,
-    lineTileTileMap: layer.lineTileTileMap,
+    lineTileMap: layer.lineTileMap,
     groundTileMap: layer.groundTileMap,
   };
 }

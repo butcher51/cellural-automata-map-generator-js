@@ -10,7 +10,7 @@ import { generateDeepWaterValueMap } from "./generateDeepWaterValueMap.js";
 import { generateDrawMap } from "./generateDrawMap.js";
 import { generateEmptyValueMap } from "./generateEmptyValueMap.js";
 import { generateGroundTileMap } from "./generateGroundMap.js";
-import { generateLineTileTileMap } from "./generateLineTileTileMap.js";
+import { generateLineTileMap } from "./generateLineTileMap.js";
 import { generatePineTileMap } from "./generatePineTileMap.js";
 import { generateTreeTileMap } from "./generateTreeTileMap.js";
 import { generateWaterTileMap } from "./generateWaterTileMap.js";
@@ -18,7 +18,7 @@ import { generateWaterValueMap } from "./generateWaterValueMap.js";
 import { getBresenhamLine } from "./getBresenhamLine.js";
 import { initSeed } from "./initSeed.js";
 import { createLayer } from "./layer.js";
-import { getLineTileType, isLineTileTool } from "./lineTileTileConstants.js";
+import { getLineTileType, isLineTileTool } from "./lineTileConstants.js";
 import {
   applyOrganicIterations,
   clampCamera,
@@ -399,7 +399,7 @@ baseLayer.deadTreeValueMap = clearDeadTreesFromWater(baseLayer.deadTreeValueMap,
 
 baseLayer.pineTileMap = generatePineTileMap(baseLayer.pineValueMap);
 baseLayer.deadTreeTileMap = generateDeadTreeTileMap(baseLayer.deadTreeValueMap);
-baseLayer.lineTileTileMap = generateLineTileTileMap(baseLayer.lineTileValueMap);
+baseLayer.lineTileMap = generateLineTileMap(baseLayer.lineTileValueMap);
 
 baseLayer.treeTileMap = generateTreeTileMap(baseLayer.treeValueMap);
 
@@ -644,7 +644,7 @@ function handleMouseUp(event) {
     layer.deadTreeValueMap = lineResult.deadTreeValueMap;
     layer.waterValueMap = lineResult.waterValueMap;
     layer.cliffValueMap = lineResult.cliffValueMap;
-    layer.lineTileTileMap = generateLineTileTileMap(layer.lineTileValueMap);
+    layer.lineTileMap = generateLineTileMap(layer.lineTileValueMap);
 
     lineTileStartCell = null;
     lineTilePreviewCells = [];
@@ -692,7 +692,7 @@ function handleMouseUp(event) {
 
   // Regenerate lineTile tile map (other tools may have cleared lineTile cells)
   if (layer.lineTileValueMap) {
-    layer.lineTileTileMap = generateLineTileTileMap(layer.lineTileValueMap);
+    layer.lineTileMap = generateLineTileMap(layer.lineTileValueMap);
   }
 
   // Sync layer stack
@@ -933,7 +933,7 @@ function regenerateMap(newSeed) {
 
   baseLayer.pineTileMap = generatePineTileMap(baseLayer.pineValueMap);
   baseLayer.deadTreeTileMap = generateDeadTreeTileMap(baseLayer.deadTreeValueMap);
-  baseLayer.lineTileTileMap = generateLineTileTileMap(baseLayer.lineTileValueMap);
+  baseLayer.lineTileMap = generateLineTileMap(baseLayer.lineTileValueMap);
   baseLayer.treeTileMap = generateTreeTileMap(baseLayer.treeValueMap);
 
   layers = [baseLayer];

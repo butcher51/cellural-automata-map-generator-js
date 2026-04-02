@@ -1,4 +1,4 @@
-import { LINE_TILE_SHAPES } from "./lineTileTileConstants.js";
+import { LINE_TILE_SHAPES } from "./lineTileConstants.js";
 
 /**
  * Determines the shape of a line tile based on its cardinal neighbors.

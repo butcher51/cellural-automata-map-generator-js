@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { getLineTileShape } from "./getLineTileShape.js";
-import { LINE_TILE_SHAPES } from "./lineTileTileConstants.js";
+import { LINE_TILE_SHAPES } from "./lineTileConstants.js";
 import { generateEmptyValueMap } from "./generateEmptyValueMap.js";
 
 /**

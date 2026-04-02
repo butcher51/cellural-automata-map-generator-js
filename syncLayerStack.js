@@ -4,7 +4,7 @@ import { createLayer } from "./layer.js";
 import { generateCliffTileMap } from "./generateCliffTileMap.js";
 import { generateCliffValueMap } from "./generateCliffValueMap.js";
 import { generateEmptyValueMap } from "./generateEmptyValueMap.js";
-import { generateLineTileTileMap } from "./generateLineTileTileMap.js";
+import { generateLineTileMap } from "./generateLineTileMap.js";
 import { generateSparseGroundTileMap } from "./generateSparseGroundTileMap.js";
 import { generateTreeTileMap } from "./generateTreeTileMap.js";
 import { generatePineTileMap } from "./generatePineTileMap.js";
@@ -81,7 +81,7 @@ function syncFromLayer(layers, layerIndex) {
         existingLayer.deadTreeTileMap = generateDeadTreeTileMap(existingLayer.deadTreeValueMap);
       }
       if (existingLayer.lineTileValueMap) {
-        existingLayer.lineTileTileMap = generateLineTileTileMap(existingLayer.lineTileValueMap);
+        existingLayer.lineTileMap = generateLineTileMap(existingLayer.lineTileValueMap);
       }
 
       // RECURSE: Check if upper layer has cliffs with interior
@@ -107,7 +107,7 @@ function syncFromLayer(layers, layerIndex) {
       newLayer.treeTileMap = generateTreeTileMap(newLayer.treeValueMap);
       newLayer.pineTileMap = generatePineTileMap(newLayer.pineValueMap);
       newLayer.deadTreeTileMap = generateDeadTreeTileMap(newLayer.deadTreeValueMap);
-      newLayer.lineTileTileMap = generateLineTileTileMap(newLayer.lineTileValueMap);
+      newLayer.lineTileMap = generateLineTileMap(newLayer.lineTileValueMap);
       newLayer.cliffTileMap = generateCliffTileMap(newLayer.cliffValueMap, []);
       newLayer.waterTileMap = generateWaterTileMap(newLayer.waterValueMap, null);
       newLayer.deepWaterValueMap = generateDeepWaterValueMap(newLayer.waterValueMap);

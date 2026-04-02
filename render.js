@@ -44,7 +44,7 @@ export function render(layers, drawMap, ctx, boxSize, numberSprite, tilesetImage
         }
 
         // Check for lineTile (rendered above ground, below foliage)
-        const lineTile = layer.lineTileTileMap?.[y]?.[x];
+        const lineTile = layer.lineTileMap?.[y]?.[x];
         if (lineTile && lineTile.tile !== 0) {
           if (lineTile.spritePosition) {
             layerSpriteX = lineTile.spritePosition.spriteX;
