@@ -138,6 +138,90 @@
             background-color: rgba(100, 180, 255, 0.25);
             color: #fff;
         }
+        #manual-tile-panel {
+            position: fixed;
+            top: 66px;
+            left: 10px;
+            background-color: rgba(30, 30, 30, 0.85);
+            color: #ccc;
+            padding: 10px;
+            border-radius: 6px;
+            font-family: monospace;
+            font-size: 12px;
+            z-index: 100;
+            min-width: 180px;
+            max-height: calc(100vh - 80px);
+            display: none;
+            flex-direction: column;
+        }
+        #manual-tile-panel.visible {
+            display: flex;
+        }
+        #manual-tile-panel h3 {
+            margin: 0 0 6px 0;
+            font-size: 13px;
+            color: #fff;
+        }
+        .manual-tile-tabs {
+            display: flex;
+            gap: 4px;
+            margin-bottom: 6px;
+        }
+        .manual-tile-tab {
+            padding: 4px 8px;
+            background-color: #3a3a3a;
+            color: #ccc;
+            border: 1px solid #4a4a4a;
+            border-radius: 3px;
+            cursor: pointer;
+            font-family: monospace;
+            font-size: 11px;
+        }
+        .manual-tile-tab.active {
+            background-color: #5a5a5a;
+            border-color: #7a7a7a;
+            color: #fff;
+        }
+        .manual-tile-grid {
+            overflow-y: auto;
+            flex: 1;
+            max-height: calc(100vh - 220px);
+            border: 1px solid #3a3a3a;
+            border-radius: 3px;
+        }
+        .manual-tile-grid canvas {
+            display: block;
+            cursor: crosshair;
+            border: none;
+        }
+        .manual-tile-info {
+            margin-top: 6px;
+            font-size: 11px;
+            color: #999;
+        }
+        .manual-tile-actions {
+            display: flex;
+            gap: 4px;
+            margin-top: 6px;
+        }
+        .manual-tile-actions button {
+            padding: 4px 8px;
+            background-color: #3a3a3a;
+            color: #ccc;
+            border: 1px solid #4a4a4a;
+            border-radius: 3px;
+            cursor: pointer;
+            font-family: monospace;
+            font-size: 11px;
+        }
+        .manual-tile-actions button:hover {
+            background-color: #4a4a4a;
+        }
+        .manual-tile-actions button.active {
+            background-color: #5a5a5a;
+            border-color: #7a7a7a;
+            color: #fff;
+        }
     </style>
 </head>
 <body>
@@ -152,6 +236,7 @@
         <button id="cliff-tool" class="tool-button"><img src="./assets/cliff.png" alt="Cliff"></button>
         <button id="eraser-tool" class="tool-button"><img src="./assets/ground.png" alt="Ground"></button>
         <button id="lineTile-road-tool" class="tool-button"><img src="./assets/lineTile-1.png" alt="Road mud"></button>
+        <button id="manual-tile-toggle" class="tool-button" title="Manual Tile Draw">T</button>
         <div class="toolbar-spacer"></div>
         <div class="toolbar-right">
             <button id="zoom-out" class="tool-button">-</button>
@@ -167,6 +252,19 @@
     <div id="layer-debug-panel">
         <h3>Layers</h3>
         <div id="layer-list"></div>
+    </div>
+    <div id="manual-tile-panel">
+        <h3>Manual Tiles</h3>
+        <div class="manual-tile-tabs">
+            <button class="manual-tile-tab active" data-tileset="0">overworld</button>
+            <button class="manual-tile-tab" data-tileset="1">walls</button>
+        </div>
+        <div class="manual-tile-grid" id="manual-tile-grid"></div>
+        <div class="manual-tile-info" id="manual-tile-info">Selected: none</div>
+        <div class="manual-tile-actions">
+            <button id="manual-eraser-btn">Eraser</button>
+            <button id="manual-clear-all-btn">Clear All</button>
+        </div>
     </div>
     <script type="module" src="generator.js"></script>
 </body>

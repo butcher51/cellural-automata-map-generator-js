@@ -2,6 +2,8 @@ import { buildHash } from "./buildHash.js";
 import { cleanupCliffArtifacts } from "./cleanupCliffArtifacts.js";
 import { cleanupWaterArtifacts } from "./cleanupWaterArtifacts.js";
 import { BACKGROUND_COLOR, BOX_SIZE, CAMERA_SPEED, ZOOM as DEFAULT_ZOOM, DRAW_ITERATIONS, INITIAL_ITERATIONS, MAP_SIZE, SEED, setSeed } from "./constants.js";
+import { createManualTileMap } from "./createManualTileMap.js";
+import { setManualTile } from "./setManualTile.js";
 import { generateCliffTileMap } from "./generateCliffTileMap.js";
 import { generateCliffValueMap } from "./generateCliffValueMap.js";
 import { generateDeadTreeTileMap } from "./generateDeadTreeTileMap.js";
@@ -61,6 +63,12 @@ let cursorPreviewCells = []; // Array of {x, y} cells to preview
 let lineTileStartCell = null; // {x, y} where line drawing started
 let lineTilePreviewCells = []; // line preview cells for rendering
 
+// Manual tile draw state
+let manualTileMap = createManualTileMap(MAP_SIZE);
+let manualSelectedTile = null; // { tileIndex, tilesetIndex } or null
+let isManualMode = false;
+let isManualEraser = false;
+
 // Load number sprite sheet (100x10 PNG: nine 10x10 digits 0-8)
 const numberSprite = new Image();
 numberSprite.src = "./assets/numbers.png";
@@ -102,7 +110,9 @@ function updateCursorPreview(event) {
   cursorGridY = y;
 
   // Calculate preview cells based on tool
-  if (isLineTileTool(currentTool)) {
+  if (isManualMode) {
+    cursorPreviewCells = [{ x, y }]; // 1x1 brush for manual tile mode
+  } else if (isLineTileTool(currentTool)) {
     cursorPreviewCells = [{ x, y }]; // 1x1 preview for lineTile
   } else if (currentTool === "cliff") {
     cursorPreviewCells = getCellsInRectBrushArea(x, y, 3, 5, MAP_SIZE);
@@ -306,6 +316,14 @@ const lineTileRoadButton = document.getElementById("lineTile-road-tool");
 // Tool selection handlers
 function setActiveTool(tool) {
   currentTool = tool;
+  // Deactivate manual mode when switching to a normal tool
+  isManualMode = false;
+  isManualEraser = false;
+  manualSelectedTile = null;
+  updateManualTileInfo();
+  const manualEraserBtn = document.getElementById("manual-eraser-btn");
+  if (manualEraserBtn) manualEraserBtn.classList.remove("active");
+
   tree1Button.classList.toggle("active", tool === "tree-1");
   tree2Button.classList.toggle("active", tool === "tree-2");
   tree3Button.classList.toggle("active", tool === "tree-3");
@@ -435,6 +453,173 @@ function updateLayerDebugPanel() {
 }
 updateLayerDebugPanel();
 
+// --- Manual Tile Panel ---
+const manualTilePanel = document.getElementById("manual-tile-panel");
+const manualTileToggle = document.getElementById("manual-tile-toggle");
+const manualTileGrid = document.getElementById("manual-tile-grid");
+const manualTileInfo = document.getElementById("manual-tile-info");
+const manualEraserBtn = document.getElementById("manual-eraser-btn");
+const manualClearAllBtn = document.getElementById("manual-clear-all-btn");
+
+function updateManualTileInfo() {
+  if (!manualTileInfo) return;
+  if (isManualEraser) {
+    manualTileInfo.textContent = "Selected: eraser";
+  } else if (manualSelectedTile) {
+    manualTileInfo.textContent = `Selected: tile ${manualSelectedTile.tileIndex}`;
+  } else {
+    manualTileInfo.textContent = "Selected: none";
+  }
+}
+
+// Toggle panel visibility
+manualTileToggle.addEventListener("click", () => {
+  manualTilePanel.classList.toggle("visible");
+});
+
+// Eraser button
+manualEraserBtn.addEventListener("click", () => {
+  isManualMode = true;
+  isManualEraser = true;
+  manualSelectedTile = null;
+  // Deactivate normal tools visually
+  clearNormalToolActive();
+  manualEraserBtn.classList.add("active");
+  updateManualTileInfo();
+});
+
+// Clear all button
+manualClearAllBtn.addEventListener("click", () => {
+  manualTileMap = createManualTileMap(MAP_SIZE);
+});
+
+function clearNormalToolActive() {
+  tree1Button.classList.remove("active");
+  tree2Button.classList.remove("active");
+  tree3Button.classList.remove("active");
+  tree4Button.classList.remove("active");
+  pine1Button.classList.remove("active");
+  deadTree1Button.classList.remove("active");
+  waterToolButton.classList.remove("active");
+  cliffToolButton.classList.remove("active");
+  eraserToolButton.classList.remove("active");
+  lineTileRoadButton.classList.remove("active");
+}
+
+// Build tile picker canvases for each tileset
+const MANUAL_TILE_SCALE = 3;
+const manualTileCanvases = []; // { canvas, ctx, image, tileset, indexOffset }
+
+function initManualTilePanel() {
+  manualTileGrid.innerHTML = "";
+  manualTileCanvases.length = 0;
+
+  TILESETS.forEach((tileset, tilesetIndex) => {
+    let indexOffset = 0;
+    for (let i = 0; i < tilesetIndex; i++) {
+      indexOffset += TILESETS[i].totalTiles;
+    }
+
+    const tileCanvas = document.createElement("canvas");
+    tileCanvas.style.imageRendering = "pixelated";
+    const tileCtx = tileCanvas.getContext("2d");
+
+    // Use already-loaded tileset images
+    const img = tilesetImages[tilesetIndex];
+
+    const entry = { canvas: tileCanvas, ctx: tileCtx, image: img, tileset, indexOffset, tilesetIndex };
+    manualTileCanvases.push(entry);
+
+    // Hide all except first tileset
+    if (tilesetIndex > 0) {
+      tileCanvas.style.display = "none";
+    }
+
+    manualTileGrid.appendChild(tileCanvas);
+
+    // Setup canvas once image loads
+    function setupCanvas() {
+      tileCanvas.width = img.width * MANUAL_TILE_SCALE;
+      tileCanvas.height = img.height * MANUAL_TILE_SCALE;
+      tileCtx.imageSmoothingEnabled = false;
+      drawManualTileset(entry);
+    }
+
+    if (img.complete) {
+      setupCanvas();
+    } else {
+      img.addEventListener("load", setupCanvas);
+    }
+
+    // Click to select a tile
+    tileCanvas.addEventListener("click", (e) => {
+      const rect = tileCanvas.getBoundingClientRect();
+      const scaleX = tileCanvas.width / rect.width;
+      const scaleY = tileCanvas.height / rect.height;
+      const mouseX = (e.clientX - rect.left) * scaleX;
+      const mouseY = (e.clientY - rect.top) * scaleY;
+      const col = Math.floor(mouseX / (8 * MANUAL_TILE_SCALE));
+      const row = Math.floor(mouseY / (8 * MANUAL_TILE_SCALE));
+      const localIndex = row * tileset.tilesPerRow + col + 1;
+      const globalIndex = indexOffset + localIndex;
+
+      isManualMode = true;
+      isManualEraser = false;
+      manualSelectedTile = { tileIndex: globalIndex, tilesetIndex };
+      clearNormalToolActive();
+      manualEraserBtn.classList.remove("active");
+      updateManualTileInfo();
+      // Redraw to show selection highlight
+      drawManualTileset(entry, col, row);
+    });
+
+    // Hover highlight
+    tileCanvas.addEventListener("mousemove", (e) => {
+      const rect = tileCanvas.getBoundingClientRect();
+      const scaleX = tileCanvas.width / rect.width;
+      const scaleY = tileCanvas.height / rect.height;
+      const mouseX = (e.clientX - rect.left) * scaleX;
+      const mouseY = (e.clientY - rect.top) * scaleY;
+      const col = Math.floor(mouseX / (8 * MANUAL_TILE_SCALE));
+      const row = Math.floor(mouseY / (8 * MANUAL_TILE_SCALE));
+      drawManualTileset(entry, col, row);
+    });
+
+    tileCanvas.addEventListener("mouseleave", () => {
+      drawManualTileset(entry);
+    });
+  });
+
+  // Tab switching
+  const tabs = document.querySelectorAll(".manual-tile-tab");
+  tabs.forEach((tab) => {
+    tab.addEventListener("click", () => {
+      const targetIndex = parseInt(tab.dataset.tileset, 10);
+      tabs.forEach((t) => t.classList.remove("active"));
+      tab.classList.add("active");
+      manualTileCanvases.forEach((entry, i) => {
+        entry.canvas.style.display = i === targetIndex ? "block" : "none";
+      });
+    });
+  });
+}
+
+function drawManualTileset(entry, highlightCol, highlightRow) {
+  const { ctx: tileCtx, image } = entry;
+  tileCtx.clearRect(0, 0, entry.canvas.width, entry.canvas.height);
+  tileCtx.save();
+  tileCtx.scale(MANUAL_TILE_SCALE, MANUAL_TILE_SCALE);
+  tileCtx.drawImage(image, 0, 0);
+  if (highlightCol >= 0 && highlightRow >= 0) {
+    tileCtx.strokeStyle = "#ff0000";
+    tileCtx.lineWidth = 1;
+    tileCtx.strokeRect(highlightCol * 8, highlightRow * 8, 8, 8);
+  }
+  tileCtx.restore();
+}
+
+initManualTilePanel();
+
 // Wait for both images to load before starting animation
 let spriteLoaded = false;
 
@@ -510,6 +695,22 @@ function handleMouseDown(event) {
   isDrawing = true;
   paintedCellsInStroke = new Set();
 
+  // Manual tile mode: place or erase a tile
+  if (isManualMode) {
+    const rect = canvas.getBoundingClientRect();
+    const worldPixelX = event.clientX - rect.left + camera.x;
+    const worldPixelY = event.clientY - rect.top + camera.y;
+    const { x, y } = pixelToGridCoordinate(worldPixelX, worldPixelY, BOX_SIZE * zoom);
+    if (x >= 0 && x < MAP_SIZE && y >= 0 && y < MAP_SIZE) {
+      if (isManualEraser) {
+        setManualTile(manualTileMap, x, y, null);
+      } else if (manualSelectedTile) {
+        setManualTile(manualTileMap, x, y, manualSelectedTile.tileIndex);
+      }
+    }
+    return;
+  }
+
   // LineTile tool: set start cell, early return (no continuous painting)
   if (isLineTileTool(currentTool)) {
     const rect = canvas.getBoundingClientRect();
@@ -566,6 +767,22 @@ function handleMouseMove(event) {
     return;
   }
 
+  // Manual tile mode: place or erase tiles during drag
+  if (isManualMode) {
+    const rect = canvas.getBoundingClientRect();
+    const worldPixelX = event.clientX - rect.left + camera.x;
+    const worldPixelY = event.clientY - rect.top + camera.y;
+    const { x, y } = pixelToGridCoordinate(worldPixelX, worldPixelY, BOX_SIZE * zoom);
+    if (x >= 0 && x < MAP_SIZE && y >= 0 && y < MAP_SIZE) {
+      if (isManualEraser) {
+        setManualTile(manualTileMap, x, y, null);
+      } else if (manualSelectedTile) {
+        setManualTile(manualTileMap, x, y, manualSelectedTile.tileIndex);
+      }
+    }
+    return;
+  }
+
   // LineTile tool: compute preview line from start to current position
   if (isLineTileTool(currentTool) && lineTileStartCell) {
     const rect = canvas.getBoundingClientRect();
@@ -617,6 +834,11 @@ function handleMouseUp(event) {
 
   isDrawing = false;
   paintedCellsInStroke = new Set();
+
+  // Manual mode: no post-processing needed
+  if (isManualMode) {
+    return;
+  }
 
   const layer = layers[strokeTargetLayerIndex];
 
@@ -733,6 +955,23 @@ function handleTouchStart(event) {
     // Update cursor preview for touch
     updateCursorPreview(event.touches[0]);
 
+    // Manual tile mode: place or erase a tile
+    if (isManualMode) {
+      const touch = event.touches[0];
+      const rect = canvas.getBoundingClientRect();
+      const worldPixelX = touch.clientX - rect.left + camera.x;
+      const worldPixelY = touch.clientY - rect.top + camera.y;
+      const { x, y } = pixelToGridCoordinate(worldPixelX, worldPixelY, BOX_SIZE * zoom);
+      if (x >= 0 && x < MAP_SIZE && y >= 0 && y < MAP_SIZE) {
+        if (isManualEraser) {
+          setManualTile(manualTileMap, x, y, null);
+        } else if (manualSelectedTile) {
+          setManualTile(manualTileMap, x, y, manualSelectedTile.tileIndex);
+        }
+      }
+      return;
+    }
+
     // LineTile tool: set start cell, early return
     if (isLineTileTool(currentTool)) {
       const touch = event.touches[0];
@@ -802,6 +1041,23 @@ function handleTouchMove(event) {
 
   // Update cursor preview for touch
   updateCursorPreview(event.touches[0]);
+
+  // Manual tile mode: place or erase tiles during touch drag
+  if (isManualMode) {
+    const touch = event.touches[0];
+    const rect = canvas.getBoundingClientRect();
+    const worldPixelX = touch.clientX - rect.left + camera.x;
+    const worldPixelY = touch.clientY - rect.top + camera.y;
+    const { x, y } = pixelToGridCoordinate(worldPixelX, worldPixelY, BOX_SIZE * zoom);
+    if (x >= 0 && x < MAP_SIZE && y >= 0 && y < MAP_SIZE) {
+      if (isManualEraser) {
+        setManualTile(manualTileMap, x, y, null);
+      } else if (manualSelectedTile) {
+        setManualTile(manualTileMap, x, y, manualSelectedTile.tileIndex);
+      }
+    }
+    return;
+  }
 
   // LineTile tool: compute preview line
   if (isLineTileTool(currentTool) && lineTileStartCell) {
@@ -933,6 +1189,7 @@ function regenerateMap(newSeed) {
   layers = [baseLayer];
   activeLayerIndex = 0;
   strokeTargetLayerIndex = 0;
+  manualTileMap = createManualTileMap(MAP_SIZE);
   updateLayerDebugPanel();
 }
 
@@ -981,7 +1238,7 @@ function animate() {
   ctx.fillRect(0, 0, canvas.width, canvas.height);
 
   // Render the map with sprite, camera offset, and zoom
-  render(layers, drawMap, ctx, BOX_SIZE, numberSprite, tilesetImages, camera, zoom, cursorPreviewCells, lineTilePreviewCells);
+  render(layers, drawMap, ctx, BOX_SIZE, numberSprite, tilesetImages, camera, zoom, cursorPreviewCells, lineTilePreviewCells, manualTileMap);
 
   requestAnimationFrame(animate);
 }

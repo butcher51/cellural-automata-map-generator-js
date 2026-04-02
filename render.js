@@ -1,5 +1,6 @@
 import { MAP_SIZE } from "./constants.js";
 import { sortLayersByOrder } from "./layer.js";
+import { renderManualTileMap } from "./renderManualTileMap.js";
 
 // Render the map with layers composited bottom-to-top
 // Placeholder colors for lineTile types (brown tones)
@@ -7,7 +8,7 @@ const LINE_TILE_COLORS = {
   road: "#8B6914",
 };
 
-export function render(layers, drawMap, ctx, boxSize, numberSprite, tilesetImages, cameraOffset, zoom, cursorPreviewCells, lineTilePreviewCells) {
+export function render(layers, drawMap, ctx, boxSize, numberSprite, tilesetImages, cameraOffset, zoom, cursorPreviewCells, lineTilePreviewCells, manualTileMap) {
   const scaledSize = boxSize * zoom;
   const sortedLayers = sortLayersByOrder(layers);
 
@@ -154,6 +155,9 @@ export function render(layers, drawMap, ctx, boxSize, numberSprite, tilesetImage
       }
     }
   }
+
+  // Render manual tile map on top of all layers
+  renderManualTileMap(manualTileMap, ctx, scaledSize, cameraOffset, tilesetImages);
 
   // Render cursor preview (30% transparent yellow overlay)
   if (cursorPreviewCells && cursorPreviewCells.length > 0) {
