@@ -18,15 +18,15 @@ describe("generateLineTileMap", () => {
   it("produces tile with lineTileType and isLineTile flag for lineTile cells", () => {
     const valueMap = generateEmptyValueMap(3, 0);
     valueMap[1][1].value = 1;
-    valueMap[1][1].lineTileType = "wallLeft";
+    valueMap[1][1].lineTileType = "road";
 
     const result = generateLineTileMap(valueMap);
 
-    expect(result[1][1].tile).toBe("wallLeft");
+    expect(result[1][1].tile).toBe("road");
     expect(result[1][1].isLineTile).toBe(true);
     // Isolated tile → HORIZONTAL shape
     expect(result[1][1].spritePosition).toEqual(
-      LINE_TILE_TILES.wallLeft[LINE_TILE_SHAPES.HORIZONTAL].spritePosition
+      LINE_TILE_TILES.road[LINE_TILE_SHAPES.HORIZONTAL].spritePosition
     );
   });
 
@@ -34,16 +34,10 @@ describe("generateLineTileMap", () => {
     const valueMap = generateEmptyValueMap(3, 0);
     valueMap[0][0].value = 1;
     valueMap[0][0].lineTileType = "road";
-    valueMap[0][1].value = 1;
-    valueMap[0][1].lineTileType = "wallLeft";
-    valueMap[0][2].value = 1;
-    valueMap[0][2].lineTileType = "wallRight";
 
     const result = generateLineTileMap(valueMap);
 
     expect(result[0][0].tile).toBe("road");
-    expect(result[0][1].tile).toBe("wallLeft");
-    expect(result[0][2].tile).toBe("wallRight");
   });
 
   it("output dimensions match input", () => {
@@ -70,14 +64,14 @@ describe("generateLineTileMap", () => {
   it("mixed map with lineTile and non-lineTile cells", () => {
     const valueMap = generateEmptyValueMap(3, 0);
     valueMap[0][0].value = 1;
-    valueMap[0][0].lineTileType = "wallLeft";
+    valueMap[0][0].lineTileType = "road";
     valueMap[2][2].value = 1;
     valueMap[2][2].lineTileType = "road";
 
     const result = generateLineTileMap(valueMap);
 
     // lineTile cells
-    expect(result[0][0].tile).toBe("wallLeft");
+    expect(result[0][0].tile).toBe("road");
     expect(result[0][0].isLineTile).toBe(true);
     expect(result[2][2].tile).toBe("road");
     expect(result[2][2].isLineTile).toBe(true);

@@ -50,12 +50,12 @@ describe("LINE_TILE_SHAPES", () => {
 });
 
 describe("LINE_TILE_TILES", () => {
-  it("has keys road, wallLeft, and wallRight", () => {
-    expect(Object.keys(LINE_TILE_TILES)).toEqual(["road", "wallLeft", "wallRight"]);
+  it("has key road", () => {
+    expect(Object.keys(LINE_TILE_TILES)).toEqual(["road"]);
   });
 
   it("each type has all 15 shapes", () => {
-    for (const key of ["road", "wallLeft", "wallRight"]) {
+    for (const key of ["road"]) {
       const type = LINE_TILE_TILES[key];
       for (const shape of ALL_SHAPE_VALUES) {
         expect(type).toHaveProperty(shape);
@@ -64,7 +64,7 @@ describe("LINE_TILE_TILES", () => {
   });
 
   it("each shape within each type has a spritePosition with spriteX and spriteY", () => {
-    for (const key of ["road", "wallLeft", "wallRight"]) {
+    for (const key of ["road"]) {
       for (const shape of ALL_SHAPE_VALUES) {
         const shapeData = LINE_TILE_TILES[key][shape];
         expect(shapeData).toHaveProperty("spritePosition");
@@ -76,7 +76,7 @@ describe("LINE_TILE_TILES", () => {
   });
 
   it("each type has unique sprite positions per shape", () => {
-    for (const key of ["road", "wallLeft", "wallRight"]) {
+    for (const key of ["road"]) {
       const positions = ALL_SHAPE_VALUES.map(
         (shape) => LINE_TILE_TILES[key][shape].spritePosition
       );
@@ -104,10 +104,8 @@ describe("DEFAULT_LINE_TILE_TYPE", () => {
 });
 
 describe("isLineTileTool", () => {
-  it('returns true for "lineTile-road", "lineTile-wallLeft", "lineTile-wallRight"', () => {
+  it('returns true for "lineTile-road"', () => {
     expect(isLineTileTool("lineTile-road")).toBe(true);
-    expect(isLineTileTool("lineTile-wallLeft")).toBe(true);
-    expect(isLineTileTool("lineTile-wallRight")).toBe(true);
   });
 
   it("returns false for non-lineTile tools", () => {
@@ -125,8 +123,6 @@ describe("isLineTileTool", () => {
 describe("getLineTileType", () => {
   it("extracts the type from the tool string", () => {
     expect(getLineTileType("lineTile-road")).toBe("road");
-    expect(getLineTileType("lineTile-wallLeft")).toBe("wallLeft");
-    expect(getLineTileType("lineTile-wallRight")).toBe("wallRight");
   });
 
   it("returns DEFAULT_LINE_TILE_TYPE for invalid input", () => {

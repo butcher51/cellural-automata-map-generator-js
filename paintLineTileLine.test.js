@@ -113,14 +113,6 @@ describe("paintLineTileLine", () => {
 
     const result1 = paintLineTileLine(cells, "road", maps);
     expect(result1.lineTileValueMap[0][0].lineTileType).toBe("road");
-
-    const maps2 = createMaps(5);
-    const result3 = paintLineTileLine(cells, "wallLeft", maps2);
-    expect(result3.lineTileValueMap[0][0].lineTileType).toBe("wallLeft");
-
-    const maps3 = createMaps(5);
-    const result4 = paintLineTileLine(cells, "wallRight", maps3);
-    expect(result4.lineTileValueMap[0][0].lineTileType).toBe("wallRight");
   });
 
   it("does not modify cells outside the painted line", () => {

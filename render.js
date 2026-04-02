@@ -5,8 +5,6 @@ import { sortLayersByOrder } from "./layer.js";
 // Placeholder colors for lineTile types (brown tones)
 const LINE_TILE_COLORS = {
   road: "#8B6914",
-  wallLeft: "#6B4226",
-  wallRight: "#CD853F",
 };
 
 export function render(layers, drawMap, ctx, boxSize, numberSprite, tilesetImages, cameraOffset, zoom, cursorPreviewCells, lineTilePreviewCells) {

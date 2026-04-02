@@ -302,8 +302,6 @@ const waterToolButton = document.getElementById("water-tool");
 const cliffToolButton = document.getElementById("cliff-tool");
 const eraserToolButton = document.getElementById("eraser-tool");
 const lineTileRoadButton = document.getElementById("lineTile-road-tool");
-const lineTileWallLeftButton = document.getElementById("lineTile-wallLeft-tool");
-const lineTileWallRightButton = document.getElementById("lineTile-wallRight-tool");
 
 // Tool selection handlers
 function setActiveTool(tool) {
@@ -318,8 +316,6 @@ function setActiveTool(tool) {
   cliffToolButton.classList.toggle("active", tool === "cliff");
   eraserToolButton.classList.toggle("active", tool === "eraser");
   lineTileRoadButton.classList.toggle("active", tool === "lineTile-road");
-  lineTileWallLeftButton.classList.toggle("active", tool === "lineTile-wallLeft");
-  lineTileWallRightButton.classList.toggle("active", tool === "lineTile-wallRight");
 }
 
 tree1Button.addEventListener("click", () => setActiveTool("tree-1"));
@@ -332,8 +328,6 @@ waterToolButton.addEventListener("click", () => setActiveTool("water"));
 cliffToolButton.addEventListener("click", () => setActiveTool("cliff"));
 eraserToolButton.addEventListener("click", () => setActiveTool("eraser"));
 lineTileRoadButton.addEventListener("click", () => setActiveTool("lineTile-road"));
-lineTileWallLeftButton.addEventListener("click", () => setActiveTool("lineTile-wallLeft"));
-lineTileWallRightButton.addEventListener("click", () => setActiveTool("lineTile-wallRight"));
 
 // Helper function to get available canvas height
 function getCanvasHeight() {

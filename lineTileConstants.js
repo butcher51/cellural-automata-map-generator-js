@@ -49,46 +49,10 @@ export const LINE_TILE_TILES = buildLineTiles({
     tRight: 961,
     middle: 965,
   },
-  wallLeft: {
-    horizontal: 2262,
-    vertical: 2285,
-    cornerLeftTop: 2406,
-    cornerLeftBottom: 2358,
-    cornerRightTop: 2309,
-    cornerRightBottom: 2261,
-    endTop: 2405,
-    endBottom: 2357,
-    endLeft: 2285,
-    endRight: 2262,
-    tTop: 0,
-    tBottom: 0,
-    tLeft: 0,
-    tRight: 0,
-    middle: 0,
-  },
-  wallRight: {
-    horizontal: 2263,
-    vertical: 2288,
-    cornerLeftTop: 2312,
-    cornerLeftBottom: 2264,
-    cornerRightTop: 2407,
-    cornerRightBottom: 2359,
-    endTop: 0,
-    endBottom: 0,
-    endLeft: 0,
-    endRight: 0,
-    tTop: 0,
-    tBottom: 0,
-    tLeft: 0,
-    tRight: 0,
-    middle: 0,
-  },
 });
 
 const VALID_LINE_TILE_TOOLS = new Set([
   "lineTile-road",
-  "lineTile-wallLeft",
-  "lineTile-wallRight",
 ]);
 
 export function isLineTileTool(tool) {
