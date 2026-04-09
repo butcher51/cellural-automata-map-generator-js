@@ -1,3 +1,4 @@
+import { adjustCameraForZoom, adjustCameraForZoomAtPoint } from "./adjustCameraForZoom.js";
 import { buildHash } from "./buildHash.js";
 import { cleanupCliffArtifacts } from "./cleanupCliffArtifacts.js";
 import { cleanupWaterArtifacts } from "./cleanupWaterArtifacts.js";
@@ -667,9 +668,13 @@ window.addEventListener("keydown", (e) => {
 
   // Zoom controls: + to zoom in, - to zoom out
   if (e.key === "+" || e.key === "=") {
+    const oldZoom = zoom;
     zoom = Math.min(zoom + 1, MAX_ZOOM);
+    camera = adjustCameraForZoom(camera, oldZoom, zoom, canvas.width, canvas.height);
   } else if (e.key === "-" || e.key === "_") {
+    const oldZoom = zoom;
     zoom = Math.max(zoom - 1, MIN_ZOOM);
+    camera = adjustCameraForZoom(camera, oldZoom, zoom, canvas.width, canvas.height);
   }
 });
 
@@ -1016,16 +1021,23 @@ function handleTouchMove(event) {
     const currentMidpoint = getTouchMidpoint(event.touches[0], event.touches[1]);
 
     // Calculate zoom based on pinch ratio
+    const oldZoom = zoom;
     const pinchRatio = currentDistance / initialPinchDistance;
     const newZoom = Math.round(initialZoom * pinchRatio);
     zoom = Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, newZoom));
+
+    // Adjust camera so the pinch midpoint stays on the same world point
+    const rect = canvas.getBoundingClientRect();
+    const focalX = currentMidpoint.x - rect.left;
+    const focalY = currentMidpoint.y - rect.top;
+    camera = adjustCameraForZoomAtPoint(camera, oldZoom, zoom, focalX, focalY);
 
     // Calculate pan based on midpoint movement
     if (lastTouchMidpoint) {
       const dx = currentMidpoint.x - lastTouchMidpoint.x;
       const dy = currentMidpoint.y - lastTouchMidpoint.y;
-      camera.x -= dx / zoom;
-      camera.y -= dy / zoom;
+      camera.x -= dx;
+      camera.y -= dy;
     }
     lastTouchMidpoint = currentMidpoint;
 
@@ -1141,13 +1153,32 @@ canvas.addEventListener("mouseleave", () => {
   cursorPreviewCells = [];
 });
 
+// Mouse wheel zoom (zooms toward cursor position)
+canvas.addEventListener("wheel", (event) => {
+  event.preventDefault();
+  const oldZoom = zoom;
+  if (event.deltaY < 0) {
+    zoom = Math.min(zoom + 1, MAX_ZOOM);
+  } else {
+    zoom = Math.max(zoom - 1, MIN_ZOOM);
+  }
+  const rect = canvas.getBoundingClientRect();
+  const focalX = event.clientX - rect.left;
+  const focalY = event.clientY - rect.top;
+  camera = adjustCameraForZoomAtPoint(camera, oldZoom, zoom, focalX, focalY);
+}, { passive: false });
+
 // Zoom controls
 document.getElementById("zoom-in").addEventListener("click", () => {
+  const oldZoom = zoom;
   zoom = Math.min(zoom + 1, MAX_ZOOM);
+  camera = adjustCameraForZoom(camera, oldZoom, zoom, canvas.width, canvas.height);
 });
 
 document.getElementById("zoom-out").addEventListener("click", () => {
+  const oldZoom = zoom;
   zoom = Math.max(zoom - 1, MIN_ZOOM);
+  camera = adjustCameraForZoom(camera, oldZoom, zoom, canvas.width, canvas.height);
 });
 
 const newSeedButton = document.getElementById("new-seed-button");
