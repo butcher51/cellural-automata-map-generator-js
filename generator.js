@@ -5,6 +5,7 @@ import { cleanupWaterArtifacts } from "./cleanupWaterArtifacts.js";
 import { BACKGROUND_COLOR, BOX_SIZE, CAMERA_SPEED, ZOOM as DEFAULT_ZOOM, DRAW_ITERATIONS, INITIAL_ITERATIONS, MAP_SIZE, SEED, setSeed } from "./constants.js";
 import { createManualTileMap } from "./createManualTileMap.js";
 import { setManualTile } from "./setManualTile.js";
+import { stampManualTileSelection } from "./stampManualTileSelection.js";
 import { generateCliffTileMap } from "./generateCliffTileMap.js";
 import { generateCliffValueMap } from "./generateCliffValueMap.js";
 import { generateDeadTreeTileMap } from "./generateDeadTreeTileMap.js";
@@ -66,8 +67,12 @@ let lineTilePreviewCells = []; // line preview cells for rendering
 
 // Manual tile draw state
 let manualTileMap = createManualTileMap(MAP_SIZE);
-let manualSelectedTile = null; // { tileIndex, tilesetIndex } or null
+let manualSelectedTile = null; // { tilesetIndex, tiles: [[index,...], ...] } or null
 let isManualMode = false;
+
+// Picker drag state for multi-tile rectangle selection
+let pickerDragStart = null; // { col, row, tilesetIndex }
+let pickerDragEnd = null;   // { col, row }
 
 // Load number sprite sheet (100x10 PNG: nine 10x10 digits 0-8)
 const numberSprite = new Image();
@@ -111,7 +116,21 @@ function updateCursorPreview(event) {
 
   // Calculate preview cells based on tool
   if (isManualMode) {
-    cursorPreviewCells = [{ x, y }]; // 1x1 brush for manual tile mode
+    if (manualSelectedTile && manualSelectedTile.tiles) {
+      const h = manualSelectedTile.tiles.length;
+      const w = manualSelectedTile.tiles[0].length;
+      cursorPreviewCells = [];
+      for (let dy = 0; dy < h; dy++) {
+        for (let dx = 0; dx < w; dx++) {
+          const cx = x + dx, cy = y + dy;
+          if (cx >= 0 && cx < MAP_SIZE && cy >= 0 && cy < MAP_SIZE) {
+            cursorPreviewCells.push({ x: cx, y: cy });
+          }
+        }
+      }
+    } else {
+      cursorPreviewCells = [{ x, y }];
+    }
   } else if (isLineTileTool(currentTool)) {
     cursorPreviewCells = [{ x, y }]; // 1x1 preview for lineTile
   } else if (currentTool === "cliff") {
@@ -460,7 +479,13 @@ const manualClearAllBtn = document.getElementById("manual-clear-all-btn");
 function updateManualTileInfo() {
   if (!manualTileInfo) return;
   if (manualSelectedTile) {
-    manualTileInfo.textContent = `Selected: tile ${manualSelectedTile.tileIndex}`;
+    const h = manualSelectedTile.tiles.length;
+    const w = manualSelectedTile.tiles[0].length;
+    if (h === 1 && w === 1) {
+      manualTileInfo.textContent = `Selected: tile ${manualSelectedTile.tiles[0][0]}`;
+    } else {
+      manualTileInfo.textContent = `Selected: ${w}x${h} tiles`;
+    }
   } else {
     manualTileInfo.textContent = "Selected: none";
   }
@@ -534,39 +559,81 @@ function initManualTilePanel() {
       img.addEventListener("load", setupCanvas);
     }
 
-    // Click to select a tile
-    tileCanvas.addEventListener("click", (e) => {
+    // Helper to convert mouse event to picker grid cell
+    function getPickerCell(e) {
       const rect = tileCanvas.getBoundingClientRect();
       const scaleX = tileCanvas.width / rect.width;
       const scaleY = tileCanvas.height / rect.height;
       const mouseX = (e.clientX - rect.left) * scaleX;
       const mouseY = (e.clientY - rect.top) * scaleY;
-      const col = Math.floor(mouseX / (8 * MANUAL_TILE_SCALE));
-      const row = Math.floor(mouseY / (8 * MANUAL_TILE_SCALE));
-      const localIndex = row * tileset.tilesPerRow + col + 1;
-      const globalIndex = indexOffset + localIndex;
+      const maxCol = tileset.tilesPerRow - 1;
+      const maxRow = Math.ceil(tileset.totalTiles / tileset.tilesPerRow) - 1;
+      return {
+        col: Math.max(0, Math.min(maxCol, Math.floor(mouseX / (8 * MANUAL_TILE_SCALE)))),
+        row: Math.max(0, Math.min(maxRow, Math.floor(mouseY / (8 * MANUAL_TILE_SCALE)))),
+      };
+    }
 
+    // Mousedown: start drag selection
+    tileCanvas.addEventListener("mousedown", (e) => {
+      const { col, row } = getPickerCell(e);
+      pickerDragStart = { col, row, tilesetIndex };
+      pickerDragEnd = { col, row };
       isManualMode = true;
-      manualSelectedTile = { tileIndex: globalIndex, tilesetIndex };
       clearNormalToolActive();
-      updateManualTileInfo();
-      // Redraw to show selection highlight
-      drawManualTileset(entry, col, row);
+      drawManualTileset(entry, col, row, col, row);
     });
 
-    // Hover highlight
+    // Mousemove: update drag rectangle or show hover highlight
     tileCanvas.addEventListener("mousemove", (e) => {
-      const rect = tileCanvas.getBoundingClientRect();
-      const scaleX = tileCanvas.width / rect.width;
-      const scaleY = tileCanvas.height / rect.height;
-      const mouseX = (e.clientX - rect.left) * scaleX;
-      const mouseY = (e.clientY - rect.top) * scaleY;
-      const col = Math.floor(mouseX / (8 * MANUAL_TILE_SCALE));
-      const row = Math.floor(mouseY / (8 * MANUAL_TILE_SCALE));
-      drawManualTileset(entry, col, row);
+      const { col, row } = getPickerCell(e);
+      if (pickerDragStart && pickerDragStart.tilesetIndex === tilesetIndex) {
+        pickerDragEnd = { col, row };
+        const minCol = Math.min(pickerDragStart.col, col);
+        const minRow = Math.min(pickerDragStart.row, row);
+        const maxCol = Math.max(pickerDragStart.col, col);
+        const maxRow = Math.max(pickerDragStart.row, row);
+        drawManualTileset(entry, minCol, minRow, maxCol, maxRow);
+      } else {
+        drawManualTileset(entry, col, row, col, row);
+      }
     });
 
+    // Mouseup: finalize rectangle selection
+    tileCanvas.addEventListener("mouseup", (e) => {
+      if (!pickerDragStart || pickerDragStart.tilesetIndex !== tilesetIndex) {
+        pickerDragStart = null;
+        pickerDragEnd = null;
+        return;
+      }
+      const { col, row } = getPickerCell(e);
+      const minCol = Math.min(pickerDragStart.col, col);
+      const minRow = Math.min(pickerDragStart.row, row);
+      const maxCol = Math.max(pickerDragStart.col, col);
+      const maxRow = Math.max(pickerDragStart.row, row);
+
+      // Build 2D tiles array of global indices
+      const tiles = [];
+      for (let r = minRow; r <= maxRow; r++) {
+        const rowTiles = [];
+        for (let c = minCol; c <= maxCol; c++) {
+          const localIndex = r * tileset.tilesPerRow + c + 1;
+          rowTiles.push(indexOffset + localIndex);
+        }
+        tiles.push(rowTiles);
+      }
+
+      manualSelectedTile = { tilesetIndex, tiles };
+      updateManualTileInfo();
+      drawManualTileset(entry, minCol, minRow, maxCol, maxRow);
+      pickerDragStart = null;
+      pickerDragEnd = null;
+    });
+
+    // Mouseleave: cancel drag, clear highlight
     tileCanvas.addEventListener("mouseleave", () => {
+      pickerDragStart = null;
+      pickerDragEnd = null;
       drawManualTileset(entry);
     });
   });
@@ -578,6 +645,8 @@ function initManualTilePanel() {
       const targetIndex = parseInt(tab.dataset.tileset, 10);
       tabs.forEach((t) => t.classList.remove("active"));
       tab.classList.add("active");
+      pickerDragStart = null;
+      pickerDragEnd = null;
       manualTileCanvases.forEach((entry, i) => {
         entry.canvas.style.display = i === targetIndex ? "block" : "none";
       });
@@ -585,16 +654,16 @@ function initManualTilePanel() {
   });
 }
 
-function drawManualTileset(entry, highlightCol, highlightRow) {
+function drawManualTileset(entry, startCol, startRow, endCol, endRow) {
   const { ctx: tileCtx, image } = entry;
   tileCtx.clearRect(0, 0, entry.canvas.width, entry.canvas.height);
   tileCtx.save();
   tileCtx.scale(MANUAL_TILE_SCALE, MANUAL_TILE_SCALE);
   tileCtx.drawImage(image, 0, 0);
-  if (highlightCol >= 0 && highlightRow >= 0) {
+  if (startCol >= 0 && startRow >= 0 && endCol >= 0 && endRow >= 0) {
     tileCtx.strokeStyle = "#ff0000";
     tileCtx.lineWidth = 1;
-    tileCtx.strokeRect(highlightCol * 8, highlightRow * 8, 8, 8);
+    tileCtx.strokeRect(startCol * 8, startRow * 8, (endCol - startCol + 1) * 8, (endRow - startRow + 1) * 8);
   }
   tileCtx.restore();
 }
@@ -680,17 +749,13 @@ function handleMouseDown(event) {
   isDrawing = true;
   paintedCellsInStroke = new Set();
 
-  // Manual tile mode: place or erase a tile
+  // Manual tile mode: stamp selection
   if (isManualMode) {
     const rect = canvas.getBoundingClientRect();
     const worldPixelX = event.clientX - rect.left + camera.x;
     const worldPixelY = event.clientY - rect.top + camera.y;
     const { x, y } = pixelToGridCoordinate(worldPixelX, worldPixelY, BOX_SIZE * zoom);
-    if (x >= 0 && x < MAP_SIZE && y >= 0 && y < MAP_SIZE) {
-      if (manualSelectedTile) {
-        setManualTile(manualTileMap, x, y, manualSelectedTile.tileIndex);
-      }
-    }
+    stampManualTileSelection(manualTileMap, x, y, manualSelectedTile);
     return;
   }
 
@@ -751,17 +816,13 @@ function handleMouseMove(event) {
     return;
   }
 
-  // Manual tile mode: place or erase tiles during drag
+  // Manual tile mode: stamp selection during drag
   if (isManualMode) {
     const rect = canvas.getBoundingClientRect();
     const worldPixelX = event.clientX - rect.left + camera.x;
     const worldPixelY = event.clientY - rect.top + camera.y;
     const { x, y } = pixelToGridCoordinate(worldPixelX, worldPixelY, BOX_SIZE * zoom);
-    if (x >= 0 && x < MAP_SIZE && y >= 0 && y < MAP_SIZE) {
-      if (manualSelectedTile) {
-        setManualTile(manualTileMap, x, y, manualSelectedTile.tileIndex);
-      }
-    }
+    stampManualTileSelection(manualTileMap, x, y, manualSelectedTile);
     return;
   }
 
@@ -939,18 +1000,14 @@ function handleTouchStart(event) {
     // Update cursor preview for touch
     updateCursorPreview(event.touches[0]);
 
-    // Manual tile mode: place or erase a tile
+    // Manual tile mode: stamp selection
     if (isManualMode) {
       const touch = event.touches[0];
       const rect = canvas.getBoundingClientRect();
       const worldPixelX = touch.clientX - rect.left + camera.x;
       const worldPixelY = touch.clientY - rect.top + camera.y;
       const { x, y } = pixelToGridCoordinate(worldPixelX, worldPixelY, BOX_SIZE * zoom);
-      if (x >= 0 && x < MAP_SIZE && y >= 0 && y < MAP_SIZE) {
-        if (manualSelectedTile) {
-          setManualTile(manualTileMap, x, y, manualSelectedTile.tileIndex);
-        }
-      }
+      stampManualTileSelection(manualTileMap, x, y, manualSelectedTile);
       return;
     }
 
@@ -1032,18 +1089,14 @@ function handleTouchMove(event) {
   // Update cursor preview for touch
   updateCursorPreview(event.touches[0]);
 
-  // Manual tile mode: place or erase tiles during touch drag
+  // Manual tile mode: stamp selection during touch drag
   if (isManualMode) {
     const touch = event.touches[0];
     const rect = canvas.getBoundingClientRect();
     const worldPixelX = touch.clientX - rect.left + camera.x;
     const worldPixelY = touch.clientY - rect.top + camera.y;
     const { x, y } = pixelToGridCoordinate(worldPixelX, worldPixelY, BOX_SIZE * zoom);
-    if (x >= 0 && x < MAP_SIZE && y >= 0 && y < MAP_SIZE) {
-      if (manualSelectedTile) {
-        setManualTile(manualTileMap, x, y, manualSelectedTile.tileIndex);
-      }
-    }
+    stampManualTileSelection(manualTileMap, x, y, manualSelectedTile);
     return;
   }
 
