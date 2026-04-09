@@ -1,4 +1,5 @@
 import { setCellValue } from "./map-utils.js";
+import { setManualTile } from "./setManualTile.js";
 
 /**
  * Paints a line of cells onto value maps.
@@ -18,6 +19,7 @@ export function paintLineTileLine(cells, lineTileType, maps) {
     waterValueMap,
     cliffValueMap,
     groundTileMap,
+    manualTileMap,
   } = maps;
 
   const mapSize = lineTileValueMap.length;
@@ -30,6 +32,9 @@ export function paintLineTileLine(cells, lineTileType, maps) {
 
     // Skip null ground
     if (groundTileMap && groundTileMap[y]?.[x] == null) continue;
+
+    // Clear manual tile at this position
+    if (manualTileMap) setManualTile(manualTileMap, x, y, null);
 
     // Set lineTile
     lineTileValueMap = setCellValue(lineTileValueMap, x, y, 1);

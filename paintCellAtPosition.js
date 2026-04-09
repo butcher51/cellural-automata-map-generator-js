@@ -3,8 +3,9 @@ import { getCellsInBrushArea, getCellsInRectBrushArea, pixelToGridCoordinate, se
 import { isTreeTool, getTreeType } from "./treeTileConstants.js";
 import { isPineTool, getPineType } from "./pineTileConstants.js";
 import { isDeadTreeTool, getDeadTreeType } from "./deadTreeTileConstants.js";
+import { setManualTile } from "./setManualTile.js";
 
-export function paintCellAtPosition({ canvas, currentTool, event, drawMap, treeValueMap, waterValueMap, cliffValueMap, pineValueMap, deadTreeValueMap, lineTileValueMap, camera, zoom, paintedCellsInStroke, groundTileMap }) {
+export function paintCellAtPosition({ canvas, currentTool, event, drawMap, treeValueMap, waterValueMap, cliffValueMap, pineValueMap, deadTreeValueMap, lineTileValueMap, camera, zoom, paintedCellsInStroke, groundTileMap, manualTileMap }) {
   // Get click coordinates relative to canvas
   const rect = canvas.getBoundingClientRect();
   const pixelX = event.clientX - rect.left;
@@ -36,6 +37,7 @@ export function paintCellAtPosition({ canvas, currentTool, event, drawMap, treeV
     if (groundTileMap && groundTileMap[cell.y]?.[cell.x] == null) continue;
     const cellKey = `${cell.x},${cell.y}`;
     if (!paintedCellsInStroke.has(cellKey)) {
+      if (manualTileMap) setManualTile(manualTileMap, cell.x, cell.y, null);
       drawMap[cell.y][cell.x] = true;
       if (isTreeTool(currentTool)) {
         treeValueMap = setCellValue(treeValueMap, cell.x, cell.y, 0);

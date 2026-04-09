@@ -115,6 +115,18 @@ describe("paintLineTileLine", () => {
     expect(result1.lineTileValueMap[0][0].lineTileType).toBe("road");
   });
 
+  it("clears manual tiles at painted positions when manualTileMap is provided", () => {
+    const maps = createMaps(5);
+    const manualTileMap = Array.from({ length: 5 }, () => Array(5).fill(null));
+    manualTileMap[1][2] = { tileIndex: 42, spritePosition: { sx: 0, sy: 0 } };
+    maps.manualTileMap = manualTileMap;
+
+    const cells = [{ x: 2, y: 1 }];
+    paintLineTileLine(cells, "road", maps);
+
+    expect(manualTileMap[1][2]).toBeNull();
+  });
+
   it("does not modify cells outside the painted line", () => {
     const maps = createMaps(5);
     const cells = [{ x: 2, y: 2 }];

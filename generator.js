@@ -68,7 +68,6 @@ let lineTilePreviewCells = []; // line preview cells for rendering
 let manualTileMap = createManualTileMap(MAP_SIZE);
 let manualSelectedTile = null; // { tileIndex, tilesetIndex } or null
 let isManualMode = false;
-let isManualEraser = false;
 
 // Load number sprite sheet (100x10 PNG: nine 10x10 digits 0-8)
 const numberSprite = new Image();
@@ -319,11 +318,8 @@ function setActiveTool(tool) {
   currentTool = tool;
   // Deactivate manual mode when switching to a normal tool
   isManualMode = false;
-  isManualEraser = false;
   manualSelectedTile = null;
   updateManualTileInfo();
-  const manualEraserBtn = document.getElementById("manual-eraser-btn");
-  if (manualEraserBtn) manualEraserBtn.classList.remove("active");
 
   tree1Button.classList.toggle("active", tool === "tree-1");
   tree2Button.classList.toggle("active", tool === "tree-2");
@@ -459,14 +455,11 @@ const manualTilePanel = document.getElementById("manual-tile-panel");
 const manualTileToggle = document.getElementById("manual-tile-toggle");
 const manualTileGrid = document.getElementById("manual-tile-grid");
 const manualTileInfo = document.getElementById("manual-tile-info");
-const manualEraserBtn = document.getElementById("manual-eraser-btn");
 const manualClearAllBtn = document.getElementById("manual-clear-all-btn");
 
 function updateManualTileInfo() {
   if (!manualTileInfo) return;
-  if (isManualEraser) {
-    manualTileInfo.textContent = "Selected: eraser";
-  } else if (manualSelectedTile) {
+  if (manualSelectedTile) {
     manualTileInfo.textContent = `Selected: tile ${manualSelectedTile.tileIndex}`;
   } else {
     manualTileInfo.textContent = "Selected: none";
@@ -476,17 +469,6 @@ function updateManualTileInfo() {
 // Toggle panel visibility
 manualTileToggle.addEventListener("click", () => {
   manualTilePanel.classList.toggle("visible");
-});
-
-// Eraser button
-manualEraserBtn.addEventListener("click", () => {
-  isManualMode = true;
-  isManualEraser = true;
-  manualSelectedTile = null;
-  // Deactivate normal tools visually
-  clearNormalToolActive();
-  manualEraserBtn.classList.add("active");
-  updateManualTileInfo();
 });
 
 // Clear all button
@@ -565,10 +547,8 @@ function initManualTilePanel() {
       const globalIndex = indexOffset + localIndex;
 
       isManualMode = true;
-      isManualEraser = false;
       manualSelectedTile = { tileIndex: globalIndex, tilesetIndex };
       clearNormalToolActive();
-      manualEraserBtn.classList.remove("active");
       updateManualTileInfo();
       // Redraw to show selection highlight
       drawManualTileset(entry, col, row);
@@ -707,9 +687,7 @@ function handleMouseDown(event) {
     const worldPixelY = event.clientY - rect.top + camera.y;
     const { x, y } = pixelToGridCoordinate(worldPixelX, worldPixelY, BOX_SIZE * zoom);
     if (x >= 0 && x < MAP_SIZE && y >= 0 && y < MAP_SIZE) {
-      if (isManualEraser) {
-        setManualTile(manualTileMap, x, y, null);
-      } else if (manualSelectedTile) {
+      if (manualSelectedTile) {
         setManualTile(manualTileMap, x, y, manualSelectedTile.tileIndex);
       }
     }
@@ -746,6 +724,7 @@ function handleMouseDown(event) {
     zoom,
     paintedCellsInStroke,
     groundTileMap: layer.groundTileMap,
+    manualTileMap,
   });
   layer.pineValueMap = result.pineValueMap;
   layer.deadTreeValueMap = result.deadTreeValueMap;
@@ -779,9 +758,7 @@ function handleMouseMove(event) {
     const worldPixelY = event.clientY - rect.top + camera.y;
     const { x, y } = pixelToGridCoordinate(worldPixelX, worldPixelY, BOX_SIZE * zoom);
     if (x >= 0 && x < MAP_SIZE && y >= 0 && y < MAP_SIZE) {
-      if (isManualEraser) {
-        setManualTile(manualTileMap, x, y, null);
-      } else if (manualSelectedTile) {
+      if (manualSelectedTile) {
         setManualTile(manualTileMap, x, y, manualSelectedTile.tileIndex);
       }
     }
@@ -817,6 +794,7 @@ function handleMouseMove(event) {
     zoom,
     paintedCellsInStroke,
     groundTileMap: layer.groundTileMap,
+    manualTileMap,
   });
   layer.pineValueMap = result.pineValueMap;
   layer.deadTreeValueMap = result.deadTreeValueMap;
@@ -858,6 +836,7 @@ function handleMouseUp(event) {
       waterValueMap: layer.waterValueMap,
       cliffValueMap: layer.cliffValueMap,
       groundTileMap: layer.groundTileMap,
+      manualTileMap,
     });
     layer.lineTileValueMap = lineResult.lineTileValueMap;
     layer.treeValueMap = lineResult.treeValueMap;
@@ -968,9 +947,7 @@ function handleTouchStart(event) {
       const worldPixelY = touch.clientY - rect.top + camera.y;
       const { x, y } = pixelToGridCoordinate(worldPixelX, worldPixelY, BOX_SIZE * zoom);
       if (x >= 0 && x < MAP_SIZE && y >= 0 && y < MAP_SIZE) {
-        if (isManualEraser) {
-          setManualTile(manualTileMap, x, y, null);
-        } else if (manualSelectedTile) {
+        if (manualSelectedTile) {
           setManualTile(manualTileMap, x, y, manualSelectedTile.tileIndex);
         }
       }
@@ -1007,6 +984,7 @@ function handleTouchStart(event) {
       zoom,
       paintedCellsInStroke,
       groundTileMap: layer.groundTileMap,
+      manualTileMap,
     });
   }
 }
@@ -1062,9 +1040,7 @@ function handleTouchMove(event) {
     const worldPixelY = touch.clientY - rect.top + camera.y;
     const { x, y } = pixelToGridCoordinate(worldPixelX, worldPixelY, BOX_SIZE * zoom);
     if (x >= 0 && x < MAP_SIZE && y >= 0 && y < MAP_SIZE) {
-      if (isManualEraser) {
-        setManualTile(manualTileMap, x, y, null);
-      } else if (manualSelectedTile) {
+      if (manualSelectedTile) {
         setManualTile(manualTileMap, x, y, manualSelectedTile.tileIndex);
       }
     }
@@ -1100,6 +1076,7 @@ function handleTouchMove(event) {
     zoom,
     paintedCellsInStroke,
     groundTileMap: layer.groundTileMap,
+    manualTileMap,
   });
 }
 
